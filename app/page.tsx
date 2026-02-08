@@ -1,22 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  TrendingUp, Truck, ShieldCheck, Zap, Menu, X, Smartphone, 
-  MapPin, Clock, ChevronRight, Search, Calculator, Printer, User, LogOut
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 
-// --- データ定義 (旧コードから移植) ---
-const SYS_CONFIG = { market: 1350 }; // 初期の銅建値基準
+// --- データ定義 ---
+const SYS_CONFIG = { market: 1350 }; 
 
-// ランク定義
 const RANKS = [
   { name: 'REGULAR', rate: 0.01, limit: 0, color: 'text-orange-700', bg: 'bg-orange-100', border: 'border-orange-200' },
   { name: 'GOLD', rate: 0.02, limit: 500000, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
   { name: 'PLATINUM', rate: 0.03, limit: 1000000, color: 'text-slate-900', bg: 'bg-slate-200', border: 'border-slate-300' }
 ];
 
-// 商品データ (24品目完全移植)
 const PRODUCTS = [
   { id:1, maker:'ピカ線', type:'特1号', ratio:98, eff:1.5, tag:'🌟高効率', tClass:'bg-pink-500' },
   { id:2, maker:'銅', type:'1号銅', ratio:97, eff:1.2, tag:'標準', tClass:'bg-blue-500' },
@@ -44,24 +38,20 @@ const PRODUCTS = [
   { id:24, maker:'車', type:'バッテリー', ratio:50, eff:1.0, tag:'標準', tClass:'bg-blue-500' }
 ];
 
-// --- メインコンポーネント ---
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // システム状態
   const [isPosOpen, setIsPosOpen] = useState(false);
   const [marketPrice, setMarketPrice] = useState(SYS_CONFIG.market);
   const [activeTab, setActiveTab] = useState('pika');
 
-  // ユーザー状態 (Local Storageの代わり)
   const [user, setUser] = useState<any>(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [loginTab, setLoginTab] = useState<'login' | 'register'>('login');
   const [loginId, setLoginId] = useState('');
   const [loginPw, setLoginPw] = useState('');
 
-  // POSカート状態
   const [cart, setCart] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -69,15 +59,12 @@ export default function LandingPage() {
   const [calcModalOpen, setCalcModalOpen] = useState(false);
   const [usedPoints, setUsedPoints] = useState(0);
 
-  // 初期化 & スクロール検知
   useEffect(() => {
-    // 擬似的な相場変動ロジック (Live Market Simulation)
     const timer = setInterval(() => {
       const fluctuation = Math.floor(Math.random() * 20) - 10;
       setMarketPrice(prev => prev + fluctuation);
     }, 10000);
 
-    // ユーザー情報の復元
     const storedUser = localStorage.getItem('tsukisamu_user');
     if (storedUser) setUser(JSON.parse(storedUser));
 
@@ -89,9 +76,6 @@ export default function LandingPage() {
     };
   }, []);
 
-  // --- ロジック関数 ---
-
-  // ランク計算
   const getRankInfo = (score: number) => {
     let current = RANKS[0], next = RANKS[1];
     for(let i=0; i<RANKS.length; i++) {
@@ -100,7 +84,6 @@ export default function LandingPage() {
     return { current, next };
   };
 
-  // ログイン処理
   const handleLogin = () => {
     if(loginId==='user' && loginPw==='user') {
       const u = { name:'山田建設', id:'u01', points:12500, monthScore:650000 };
@@ -112,7 +95,6 @@ export default function LandingPage() {
     }
   };
 
-  // 登録処理 (招待制)
   const handleRegister = (code: string, name: string) => {
     if(code === 'FIRST-DEAL') {
       const u = { name: name, id:'new', points:500, monthScore:0 };
@@ -131,7 +113,6 @@ export default function LandingPage() {
     setCart([]);
   };
 
-  // POS計算
   const addToCart = () => {
     const w = parseFloat(calcValue);
     if(w > 0 && selectedProduct) {
@@ -147,19 +128,16 @@ export default function LandingPage() {
     setCalcValue(prev => prev === '0' && v !== '.' ? v : prev + v);
   };
 
-  // 集計
   const subTotal = cart.reduce((a,b) => a + b.subtotal, 0);
   const tax = Math.floor(subTotal * 0.1);
   const total = subTotal + tax - usedPoints;
   const rankInfo = user ? getRankInfo(user.monthScore) : { current: RANKS[0] };
   const earnPoints = Math.floor(subTotal * rankInfo.current.rate);
 
-  // --- 表示コンポーネント ---
-
   return (
     <div className={`min-h-screen font-sans selection:bg-orange-200 ${isPosOpen ? 'overflow-hidden h-screen' : 'bg-slate-50'}`}>
       
-      {/* 1. 通常サイト (Landing Page) */}
+      {/* 1. 通常サイト */}
       <div className={isPosOpen ? 'hidden' : 'block'}>
         <header className={`fixed top-0 w-full z-40 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-2' : 'bg-transparent py-4'}`}>
           <div className="container mx-auto px-4 md:px-6">
@@ -188,18 +166,16 @@ export default function LandingPage() {
                 )}
 
                 <button onClick={() => setIsPosOpen(true)} className="bg-slate-900 text-white px-5 py-2.5 rounded-full hover:bg-slate-800 transition-all flex items-center gap-2 text-sm shadow-lg">
-                  <Calculator size={16} />
-                  Web査定・買取POS
+                  <span>📱</span> Web査定・買取POS
                 </button>
               </nav>
               
               <button className="md:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-                {mobileMenuOpen ? <X /> : <Menu />}
+                {mobileMenuOpen ? <span>✕</span> : <span>☰</span>}
               </button>
             </div>
           </div>
           
-          {/* Ticker */}
           <div className="w-full bg-slate-900 text-slate-400 text-xs py-1.5 overflow-hidden border-t border-slate-800 mt-2 md:mt-4">
             <div className="flex gap-8 items-center justify-center md:justify-start px-4">
               <span className="flex items-center gap-1"><span className="text-orange-500">●</span> LME COPPER: $12,821/t (+1.2%)</span>
@@ -209,122 +185,34 @@ export default function LandingPage() {
           </div>
         </header>
 
-        {/* Hero */}
         <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-4 bg-slate-900 text-white overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1605517476562-b9247346b0a6?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-40"></div>
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
-            
             <div className="container mx-auto relative z-10 text-center">
-                <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-                    繋げ、未来へ。
-                </h1>
+                <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">繋げ、未来へ。</h1>
                 <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
-                    資源を価値に変える、確かな目利き。創業60年の実績。<br/>
-                    苫小牧工場から、循環型社会の最前線へ。
+                    資源を価値に変える、確かな目利き。創業60年の実績。<br/>苫小牧工場から、循環型社会の最前線へ。
                 </p>
-                <div className="flex flex-wrap justify-center gap-4 mb-10">
-                    {['創業1961年', '自社ナゲット工場', '北海道全域対応'].map(tag => (
-                        <span key={tag} className="px-4 py-1 border border-white/30 rounded-full text-sm backdrop-blur-sm bg-white/10">
-                            {tag}
-                        </span>
-                    ))}
-                </div>
                 <button onClick={() => setIsPosOpen(true)} className="bg-orange-600 hover:bg-orange-500 text-white px-8 py-4 rounded-lg font-bold text-lg shadow-xl shadow-orange-900/20 transition-all transform hover:scale-105">
                     今すぐ買取単価を確認する
                 </button>
             </div>
         </section>
 
-        {/* Invitation Only Banner */}
-        <div className="bg-white py-16 px-4 border-b border-slate-200">
-            <div className="max-w-4xl mx-auto bg-gradient-to-br from-slate-800 to-black text-white rounded-2xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
-                <div className="relative z-10">
-                    <span className="bg-[#d4af37] text-black text-xs font-extrabold px-3 py-1 rounded mb-4 inline-block tracking-widest">INVITATION ONLY</span>
-                    <h2 className="text-3xl md:text-4xl font-bold mb-6">会員権は、<br/>最初の取引で手に入れる。</h2>
-                    <p className="text-slate-300 mb-6 leading-relaxed">
-                        当社では、安易な会員募集を行っておりません。一度お取引をいただき、プロフェッショナルとしての信頼関係が築けたお客様だけに、<strong>「会員認証コード」</strong>を発行しております。
-                    </p>
-                    <p className="text-slate-300 mb-8 leading-relaxed">
-                        2回目以降のお取引から、<strong>会員限定の特別単価</strong>と<strong>最大3%のポイント還元</strong>が適用されます。まずは初回、ゲストとしてお持ち込みください。
-                    </p>
-                    <button onClick={() => setIsPosOpen(true)} className="bg-white text-slate-900 px-6 py-3 rounded-lg font-bold hover:bg-slate-100 transition-colors">
-                        まずはゲストで試算する
-                    </button>
-                </div>
-                <div className="absolute -right-10 -bottom-10 text-9xl font-black text-white/5 select-none">VIP</div>
-            </div>
-        </div>
-
-        {/* Items Section */}
         <section id="items" className="py-20 bg-slate-50">
             <div className="container mx-auto px-4">
                 <h2 className="text-3xl font-bold text-center mb-12 text-slate-900">主な買取品目</h2>
-                
-                {/* Tabs */}
                 <div className="flex justify-center gap-2 mb-8 flex-wrap">
-                    {[
-                        {id:'pika', label:'ピカ線'}, {id:'cv', label:'CVケーブル'}, 
-                        {id:'iv', label:'IV線'}, {id:'mix', label:'雑線・その他'}
-                    ].map(tab => (
-                        <button 
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`px-6 py-2 rounded-full font-bold transition-all ${activeTab === tab.id ? 'bg-orange-600 text-white shadow-lg' : 'bg-white text-slate-600 border border-slate-200 hover:bg-orange-50'}`}
-                        >
-                            {tab.label}
-                        </button>
+                    {[{id:'pika', label:'ピカ線'}, {id:'cv', label:'CVケーブル'}, {id:'iv', label:'IV線'}, {id:'mix', label:'雑線・その他'}].map(tab => (
+                        <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-6 py-2 rounded-full font-bold transition-all ${activeTab === tab.id ? 'bg-orange-600 text-white shadow-lg' : 'bg-white text-slate-600 border border-slate-200 hover:bg-orange-50'}`}>{tab.label}</button>
                     ))}
                 </div>
-
-                {/* Tab Content */}
-                <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-10 animate-fade-in">
-                    {activeTab === 'pika' && (
-                        <div className="flex flex-col md:flex-row gap-8 items-start">
-                            <img src="https://images.unsplash.com/photo-1549106965-02b4d9622d0b?auto=format&fit=crop&q=80" className="w-full md:w-1/2 rounded-lg object-cover h-64 shadow-md" alt="ピカ線"/>
-                            <div>
-                                <h3 className="text-2xl font-bold mb-4 border-l-4 border-orange-600 pl-4">ピカ線 (特1号銅線)</h3>
-                                <p className="text-slate-600 mb-6 leading-relaxed">被覆を取り除いた純粋な銅線で、直径1.3mm以上のもの。表面に劣化やメッキがなく、光沢がある状態のものが最高値となります。</p>
-                                <div className="bg-yellow-50 text-yellow-800 p-4 rounded-lg text-sm font-bold border border-yellow-100">
-                                    【ポイント】酸化して黒ずんでいる場合や、エナメル線、スズメッキ線は別品目となります。
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    {activeTab === 'cv' && (
-                        <div className="flex flex-col md:flex-row gap-8 items-start">
-                             <img src="https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?auto=format&fit=crop&q=80" className="w-full md:w-1/2 rounded-lg object-cover h-64 shadow-md" alt="CV"/>
-                            <div>
-                                <h3 className="text-2xl font-bold mb-4 border-l-4 border-orange-600 pl-4">CV/CVTケーブル</h3>
-                                <p className="text-slate-600 mb-6 leading-relaxed">高圧電力用ケーブル。銅率が高く、被覆も剥きやすいため高価買取対象です。単芯(1C)か3芯(3C)か、またサイズ(sq)によって銅率が変わります。</p>
-                                <div className="bg-yellow-50 text-yellow-800 p-4 rounded-lg text-sm font-bold border border-yellow-100">
-                                    【ポイント】自社ナゲット機があるため、被覆がついたままで高価買取可能です。
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    {/* 他のタブも同様に実装可能だが省略 */}
-                    {(activeTab !== 'pika' && activeTab !== 'cv') && (
-                        <div className="text-center py-10 text-slate-500">
-                            他の品目詳細も同様に表示されます...
-                        </div>
-                    )}
-                </div>
-            </div>
-        </section>
-
-        {/* Company Info */}
-        <section id="company" className="py-20 bg-white">
-            <div className="container mx-auto px-4 max-w-3xl">
-                <h2 className="text-3xl font-bold text-center mb-12 text-slate-900">会社概要</h2>
-                <div className="overflow-hidden rounded-xl border border-slate-200">
-                    <table className="w-full text-left border-collapse">
-                        <tbody>
-                            <tr className="border-b border-slate-100"><th className="p-4 bg-slate-50 font-bold w-1/3">社名</th><td className="p-4">株式会社月寒製作所 苫小牧工場</td></tr>
-                            <tr className="border-b border-slate-100"><th className="p-4 bg-slate-50 font-bold">所在地</th><td className="p-4">〒053-0001 北海道苫小牧市一本松町9-6</td></tr>
-                            <tr className="border-b border-slate-100"><th className="p-4 bg-slate-50 font-bold">電話番号</th><td className="p-4">0144-55-5544</td></tr>
-                            <tr><th className="p-4 bg-slate-50 font-bold">事業内容</th><td className="p-4">電線・非鉄金属リサイクル、銅ナゲット製造、分電盤製造</td></tr>
-                        </tbody>
-                    </table>
+                <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-10">
+                     <div className="text-center py-10 text-slate-500">
+                        {activeTab === 'pika' ? 'ピカ線: 被覆を取り除いた純粋な銅線' : 
+                         activeTab === 'cv' ? 'CVケーブル: 高圧電力用' : 
+                         activeTab === 'iv' ? 'IV線: 一般的な屋内配線' : '雑線: 家電線など混載OK'}
+                     </div>
                 </div>
             </div>
         </section>
@@ -334,10 +222,9 @@ export default function LandingPage() {
         </footer>
       </div>
 
-      {/* 2. POSシステム (Full Screen Overlay) */}
+      {/* 2. POSシステム */}
       {isPosOpen && (
         <div className="fixed inset-0 z-50 bg-slate-100 flex flex-col animate-in slide-in-from-bottom duration-300">
-          {/* POS Header */}
           <div className="bg-white border-b border-slate-200 p-4 flex justify-between items-center shadow-sm">
             <div className="flex items-center gap-2">
                 <div className="font-black text-xl text-orange-600 tracking-tight">TSUKISAMU <span className="text-slate-400 font-light">POS</span></div>
@@ -347,14 +234,11 @@ export default function LandingPage() {
                     <div className="text-[10px] text-slate-500 font-bold uppercase">Current Market</div>
                     <div className="font-mono font-bold text-slate-900">¥{marketPrice.toLocaleString()}</div>
                 </div>
-                <button onClick={() => setIsPosOpen(false)} className="bg-slate-200 p-2 rounded-full hover:bg-slate-300 transition-colors">
-                    <X size={20} className="text-slate-600"/>
-                </button>
+                <button onClick={() => setIsPosOpen(false)} className="bg-slate-200 p-2 rounded-full hover:bg-slate-300 transition-colors">✕</button>
             </div>
           </div>
 
           <div className="flex-1 flex overflow-hidden">
-            {/* Sidebar (PC Only) */}
             <div className="w-72 bg-white border-r border-slate-200 hidden md:flex flex-col p-6 overflow-y-auto">
                 {user ? (
                     <div className={`rounded-xl p-6 text-slate-900 shadow-lg mb-6 border ${rankInfo.current.bg} ${rankInfo.current.border}`}>
@@ -364,63 +248,29 @@ export default function LandingPage() {
                         </div>
                         <div className="font-bold text-lg mb-1">{user.name}</div>
                         <div className="text-xs text-slate-500 mb-6">ID: {user.id}</div>
-                        
                         <div className="mb-1 text-xs font-bold text-slate-500">保有ポイント</div>
                         <div className="font-mono text-3xl font-black mb-4">{user.points.toLocaleString()}<span className="text-sm font-normal ml-1">pt</span></div>
-                        
-                        <div className="w-full bg-black/5 h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-slate-900 h-full" style={{ width: rankInfo.next ? `${(user.monthScore/rankInfo.next.limit)*100}%` : '100%' }}></div>
-                        </div>
-                        <div className="text-right text-[10px] mt-2 text-slate-500">
-                            {rankInfo.next ? `あと ${(rankInfo.next.limit - user.monthScore).toLocaleString()}pt でランクアップ` : '最高ランク到達'}
-                        </div>
                     </div>
                 ) : (
                     <div className="bg-slate-50 rounded-xl p-6 text-center mb-6 border border-slate-200">
-                        <User size={32} className="mx-auto text-slate-300 mb-3" />
                         <p className="text-sm text-slate-500 mb-4">ログインすると会員価格・ポイント機能が利用できます</p>
-                        <button onClick={() => setLoginModalOpen(true)} className="w-full bg-white border border-slate-300 font-bold py-2 rounded-lg text-sm hover:bg-slate-50">
-                            ログイン / 認証
-                        </button>
+                        <button onClick={() => setLoginModalOpen(true)} className="w-full bg-white border border-slate-300 font-bold py-2 rounded-lg text-sm hover:bg-slate-50">ログイン</button>
                     </div>
                 )}
-                
-                {user && (
-                     <button onClick={handleLogout} className="flex items-center gap-2 text-slate-400 text-sm hover:text-slate-600 mt-auto">
-                        <LogOut size={16} /> ログアウト
-                    </button>
-                )}
+                {user && <button onClick={handleLogout} className="flex items-center gap-2 text-slate-400 text-sm hover:text-slate-600 mt-auto">ログアウト</button>}
             </div>
 
-            {/* Main Area */}
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-                {/* Product Grid */}
                 <div className="flex-1 p-4 md:p-6 overflow-y-auto bg-slate-50/50">
                     <div className="relative mb-6">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input 
-                            type="text" 
-                            placeholder="品名・メーカーで検索..." 
-                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                        <input type="text" placeholder="品名検索..." className="w-full pl-4 pr-4 py-3 rounded-xl border border-slate-200 bg-white" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </div>
-                    
                     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {PRODUCTS.filter(p => 
-                            p.type.includes(searchQuery) || p.maker.includes(searchQuery)
-                        ).map(p => {
+                        {PRODUCTS.filter(p => p.type.includes(searchQuery) || p.maker.includes(searchQuery)).map(p => {
                             const unitPrice = Math.floor(marketPrice * (p.ratio/100));
                             return (
-                                <button 
-                                    key={p.id}
-                                    onClick={() => { setSelectedProduct(p); setCalcModalOpen(true); }}
-                                    className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-orange-300 transition-all text-left group relative overflow-hidden"
-                                >
-                                    <span className={`absolute top-0 right-0 text-[10px] font-bold text-white px-2 py-0.5 rounded-bl-lg ${p.tClass.replace('bg-', 'bg-')}`}>
-                                        {p.tag}
-                                    </span>
+                                <button key={p.id} onClick={() => { setSelectedProduct(p); setCalcModalOpen(true); }} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-orange-300 transition-all text-left group relative overflow-hidden">
+                                    <span className={`absolute top-0 right-0 text-[10px] font-bold text-white px-2 py-0.5 rounded-bl-lg ${p.tClass.replace('bg-', 'bg-')}`}>{p.tag}</span>
                                     <div className="text-xs text-slate-400 mb-1">{p.maker}</div>
                                     <div className="font-bold text-slate-800 mb-3 group-hover:text-orange-600">{p.type}</div>
                                     <div className="flex items-end justify-between">
@@ -433,67 +283,26 @@ export default function LandingPage() {
                     </div>
                 </div>
 
-                {/* Cart Area */}
                 <div className="w-full md:w-80 bg-white border-l border-slate-200 flex flex-col h-[40vh] md:h-auto shadow-xl z-20">
                     <div className="p-4 border-b border-slate-100 font-bold flex justify-between items-center bg-slate-50">
                         <span>見積カート</span>
                         <button onClick={() => setCart([])} className="text-xs text-red-500 hover:text-red-600">クリア</button>
                     </div>
-                    
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                        {cart.length === 0 ? (
-                            <div className="text-center text-slate-400 py-10 text-sm">商品を選択してください</div>
-                        ) : (
-                            cart.map((item, idx) => (
-                                <div key={idx} className="flex justify-between items-center text-sm border-b border-slate-50 pb-2">
-                                    <div>
-                                        <div className="font-bold text-slate-700">{item.type}</div>
-                                        <div className="text-xs text-slate-400">{item.weight}kg × @{item.unit}</div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="font-mono font-bold">¥{item.subtotal.toLocaleString()}</div>
-                                        <button onClick={() => {
-                                            const newCart = [...cart];
-                                            newCart.splice(idx, 1);
-                                            setCart(newCart);
-                                        }} className="text-slate-300 hover:text-red-500">×</button>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-
-                    <div className="p-4 bg-slate-50 border-t border-slate-200 space-y-2">
-                        {user && (
-                            <div className="flex gap-2 mb-2">
-                                <input 
-                                    type="number" 
-                                    placeholder="利用pt" 
-                                    className="w-20 px-2 py-1 text-sm border rounded"
-                                    onChange={(e) => setUsedPoints(Number(e.target.value))} 
-                                />
-                                <div className="text-xs flex items-center text-slate-500">ポイント利用</div>
+                        {cart.length === 0 ? <div className="text-center text-slate-400 py-10 text-sm">商品を選択してください</div> : cart.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-sm border-b border-slate-50 pb-2">
+                                <div><div className="font-bold text-slate-700">{item.type}</div><div className="text-xs text-slate-400">{item.weight}kg × @{item.unit}</div></div>
+                                <div className="flex items-center gap-3"><div className="font-mono font-bold">¥{item.subtotal.toLocaleString()}</div><button onClick={() => { const newCart = [...cart]; newCart.splice(idx, 1); setCart(newCart); }} className="text-slate-300 hover:text-red-500">×</button></div>
                             </div>
-                        )}
+                        ))}
+                    </div>
+                    <div className="p-4 bg-slate-50 border-t border-slate-200 space-y-2">
+                        {user && <div className="flex gap-2 mb-2"><input type="number" placeholder="利用pt" className="w-20 px-2 py-1 text-sm border rounded" onChange={(e) => setUsedPoints(Number(e.target.value))} /><div className="text-xs flex items-center text-slate-500">ポイント利用</div></div>}
                         <div className="flex justify-between text-xs text-slate-500"><span>小計</span><span>¥{subTotal.toLocaleString()}</span></div>
                         <div className="flex justify-between text-xs text-slate-500"><span>消費税(10%)</span><span>¥{tax.toLocaleString()}</span></div>
                         {usedPoints > 0 && <div className="flex justify-between text-xs text-red-500"><span>ポイント値引</span><span>-¥{usedPoints.toLocaleString()}</span></div>}
-                        
-                        <div className="flex justify-between items-end pt-2 border-t border-slate-200 mt-2">
-                            <span className="font-bold text-slate-700">合計支払額</span>
-                            <span className="font-mono text-2xl font-black text-orange-600">¥{total.toLocaleString()}</span>
-                        </div>
-                        
-                        <div className="text-right text-[10px] text-orange-500 font-bold">
-                            {user ? `今回付与予定: ${earnPoints} pt` : '会員登録でポイント付与'}
-                        </div>
-
-                        <button 
-                            onClick={() => window.print()}
-                            className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold mt-2 hover:bg-slate-800 flex items-center justify-center gap-2"
-                        >
-                            <Printer size={16} /> 買取明細書を発行
-                        </button>
+                        <div className="flex justify-between items-end pt-2 border-t border-slate-200 mt-2"><span className="font-bold text-slate-700">合計支払額</span><span className="font-mono text-2xl font-black text-orange-600">¥{total.toLocaleString()}</span></div>
+                        <button onClick={() => window.print()} className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold mt-2 hover:bg-slate-800 flex items-center justify-center gap-2">🖨️ 買取明細書を発行</button>
                     </div>
                 </div>
             </div>
@@ -513,11 +322,7 @@ export default function LandingPage() {
                             <div className="text-4xl font-mono font-black text-orange-600 border-b-2 border-orange-100 pb-1">{calcValue}</div>
                         </div>
                         <div className="grid grid-cols-3 gap-3 mb-6">
-                            {[7,8,9,4,5,6,1,2,3].map(n => (
-                                <button key={n} onClick={() => handleCalcInput(n.toString())} className="h-12 rounded-lg bg-slate-50 font-bold text-lg hover:bg-slate-100 text-slate-700 border border-slate-200">
-                                    {n}
-                                </button>
-                            ))}
+                            {[7,8,9,4,5,6,1,2,3].map(n => <button key={n} onClick={() => handleCalcInput(n.toString())} className="h-12 rounded-lg bg-slate-50 font-bold text-lg hover:bg-slate-100 text-slate-700 border border-slate-200">{n}</button>)}
                             <button onClick={() => handleCalcInput('0')} className="col-span-2 h-12 rounded-lg bg-slate-50 font-bold text-lg hover:bg-slate-100 text-slate-700 border border-slate-200">0</button>
                             <button onClick={() => handleCalcInput('.')} className="h-12 rounded-lg bg-slate-50 font-bold text-lg hover:bg-slate-100 text-slate-700 border border-slate-200">.</button>
                         </div>
@@ -538,7 +343,6 @@ export default function LandingPage() {
                         <button onClick={() => setLoginTab('login')} className={`flex-1 pb-2 border-b-2 font-bold ${loginTab==='login' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-400'}`}>ログイン</button>
                         <button onClick={() => setLoginTab('register')} className={`flex-1 pb-2 border-b-2 font-bold ${loginTab==='register' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-400'}`}>初回認証</button>
                     </div>
-                    
                     {loginTab === 'login' ? (
                         <div className="space-y-4">
                             <input type="text" placeholder="ID" className="w-full p-3 border rounded-lg bg-slate-50" value={loginId} onChange={e=>setLoginId(e.target.value)} />
@@ -558,19 +362,9 @@ export default function LandingPage() {
                 </div>
             </div>
           )}
-
         </div>
       )}
-
-      {/* Print Styles (Hidden in normal view) */}
-      <style jsx global>{`
-        @media print {
-            body * { visibility: hidden; }
-            .w-full.md\\:w-80, .w-full.md\\:w-80 * { visibility: visible; }
-            .w-full.md\\:w-80 { position: absolute; left: 0; top: 0; width: 100%; height: auto; border: none; }
-            button { display: none !important; }
-        }
-      `}</style>
+      <style jsx global>{` @media print { body * { visibility: hidden; } .w-full.md\\:w-80, .w-full.md\\:w-80 * { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; height: auto; } button { display: none !important; } } `}</style>
     </div>
   );
 }
