@@ -4,6 +4,11 @@
 
 import React, { useState, useEffect } from 'react';
 
+// ==========================================
+//  設定エリア (燃料パイプ)
+// ==========================================
+const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec";
+
 // --- アイコン (外部依存なし) ---
 const IconPhone = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>;
 const IconMenu = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
@@ -14,7 +19,7 @@ const IconChevronDown = ({className}) => <svg xmlns="http://www.w3.org/2000/svg"
 const IconAward = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>;
 
 // --- データ定義 ---
-const SYS_CONFIG = { market: 1350 }; 
+const SYS_CONFIG = { market: 1350 }; // 通信失敗時のフォールバック値
 
 // 会員ランク定義
 const RANKS = [
@@ -47,6 +52,7 @@ export default function LandingPage() {
   // システム状態
   const [isPosOpen, setIsPosOpen] = useState(false);
   const [marketPrice, setMarketPrice] = useState(SYS_CONFIG.market);
+  const [isLoadingMarket, setIsLoadingMarket] = useState(false);
   
   // ユーザー状態
   const [user, setUser] = useState(null);
@@ -54,6 +60,7 @@ export default function LandingPage() {
   const [loginTab, setLoginTab] = useState('login');
   const [loginId, setLoginId] = useState('');
   const [loginPw, setLoginPw] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   
   // POSカート・計算状態
   const [cart, setCart] = useState([]);
@@ -69,13 +76,39 @@ export default function LandingPage() {
 
   // 初期化・ログイン復元
   useEffect(() => {
-    // 擬似相場変動
-    const timer = setInterval(() => {
-      const fluctuation = Math.floor(Math.random() * 20) - 10;
-      setMarketPrice(prev => prev + fluctuation);
-    }, 10000);
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
 
-    // ログイン状態の自動復元
+    // 1. スプレッドシートから銅建値を取得 (失敗したら擬似変動)
+    const fetchMarketData = async () => {
+      setIsLoadingMarket(true);
+      try {
+        // GASへ問い合わせ (パラメータは推測)
+        const res = await fetch(`${API_ENDPOINT}?action=get_market_price`, { mode: 'cors' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.price) {
+            setMarketPrice(data.price);
+            return;
+          }
+        }
+        throw new Error("API Response Invalid");
+      } catch (e) {
+        console.warn("Market Data Fetch Failed, switching to simulation mode.", e);
+        // 失敗時は擬似変動モードへ移行
+        const timer = setInterval(() => {
+          const fluctuation = Math.floor(Math.random() * 20) - 10;
+          setMarketPrice(prev => prev + fluctuation);
+        }, 10000);
+        return () => clearInterval(timer);
+      } finally {
+        setIsLoadingMarket(false);
+      }
+    };
+
+    fetchMarketData();
+
+    // 2. ログイン状態の自動復元
     try {
       const storedUser = localStorage.getItem('tsukisamu_user');
       if (storedUser) {
@@ -85,12 +118,7 @@ export default function LandingPage() {
       console.error("Login restore failed", e);
     }
 
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      clearInterval(timer);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // --- ロジック関数 ---
@@ -103,16 +131,42 @@ export default function LandingPage() {
     return { current, next };
   };
 
-  const handleLogin = () => {
-    // 簡易デモ認証
+  const handleLogin = async () => {
+    setIsLoggingIn(true);
+    
+    // 1. まずはAPIログインを試行
+    try {
+      // NOTE: GAS側のパラメータ仕様に合わせて調整が必要な場合があります
+      // 今回は一般的な ?action=login&id=...&pw=... で送信します
+      const res = await fetch(`${API_ENDPOINT}?action=login&id=${loginId}&pw=${loginPw}`, { mode: 'cors' });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.success) {
+          const u = data.user; // APIからユーザー情報が返ってくると仮定
+          setUser(u);
+          localStorage.setItem('tsukisamu_user', JSON.stringify(u));
+          setLoginModalOpen(false);
+          setIsLoggingIn(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("API Login Failed, attempting fallback local login.", e);
+    }
+
+    // 2. API失敗時・または未実装時のバックアップ（デモユーザー）
+    // これにより「通信できなくてもデモは見せられる」状態を維持
     if(loginId==='user' && loginPw==='user') {
-      const u = { name:'山田建設', id:'u01', points:15000, monthScore:650000, qualityScore: 85 };
+      const u = { name:'山田建設(Demo)', id:'u01', points:15000, monthScore:650000, qualityScore: 85 };
       setUser(u);
       localStorage.setItem('tsukisamu_user', JSON.stringify(u));
       setLoginModalOpen(false);
+      alert('【デモモード】通信が確立できなかったため、テストアカウントでログインしました。');
     } else {
-      alert('IDまたはパスワードが違います (Test: user / user)');
+      alert('ログインに失敗しました。\nID/Passを確認するか、通信環境をご確認ください。\n(Test ID: user / user)');
     }
+    setIsLoggingIn(false);
   };
 
   const handleRegister = (code, name) => {
@@ -135,19 +189,14 @@ export default function LandingPage() {
     }
   };
 
-  // POS計算ロジック (貢献度ボーナス実装)
+  // POS計算ロジック
   const addToCart = () => {
     const w = parseFloat(calcValue);
     if(w > 0 && selectedProduct) {
-      // 単価計算: 相場 * 銅率
       let unit = Math.floor(marketPrice * (selectedProduct.ratio/100));
-      
-      // 分別ボーナス (Quality Bonus)
-      // 分別済みフラグがONなら、単価を少しアップ（我々の手間賃還元）
       if (isSorted) {
         unit = Math.floor(unit * 1.02); // 2% UP
       }
-
       setCart([...cart, { 
         ...selectedProduct, 
         weight: w, 
@@ -166,16 +215,11 @@ export default function LandingPage() {
     setCalcValue(prev => prev === '0' && v !== '.' ? v : prev + v);
   };
 
-  // 集計
   const subTotal = cart.reduce((a,b) => a + b.subtotal, 0);
   const tax = Math.floor(subTotal * 0.1);
-  const total = subTotal + tax - (usedPoints || 0); // ポイント利用
-  
-  // ポイント付与計算
-  // 基本ランク率
+  const total = subTotal + tax - (usedPoints || 0); 
   const rankInfo = user ? getRankInfo(user.monthScore) : { current: RANKS[0] };
-  const baseRate = rankInfo.current.pointRate; 
-  const earnPoints = Math.floor(subTotal * baseRate);
+  const earnPoints = Math.floor(subTotal * rankInfo.current.pointRate);
 
   return (
     <div className="min-h-screen font-sans text-[#1a1a1a] bg-white">
@@ -436,7 +480,9 @@ export default function LandingPage() {
                 {user && <span className={`text-xs px-2 py-0.5 rounded font-bold bg-white text-black`}>{rankInfo.current.name}</span>}
               </div>
               <div className="flex items-center gap-4">
-                <div className="hidden md:block text-xs text-orange-400">本日の銅建値: ¥{marketPrice.toLocaleString()}/t</div>
+                <div className="hidden md:block text-xs text-orange-400">
+                  {isLoadingMarket ? '相場確認中...' : `本日の銅建値: ¥${marketPrice.toLocaleString()}/t`}
+                </div>
                 <button onClick={() => setIsPosOpen(false)} className="bg-white/10 hover:bg-white/20 p-2 rounded transition-colors">
                   <IconX />
                 </button>
@@ -602,7 +648,9 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <input type="text" placeholder="ID" className="w-full p-3 border rounded bg-gray-50" value={loginId} onChange={e=>setLoginId(e.target.value)} />
                 <input type="password" placeholder="パスワード" className="w-full p-3 border rounded bg-gray-50" value={loginPw} onChange={e=>setLoginPw(e.target.value)} />
-                <button onClick={handleLogin} className="w-full bg-[#1a1a1a] text-white py-3 rounded font-bold hover:bg-black transition-colors">ログイン</button>
+                <button onClick={handleLogin} disabled={isLoggingIn} className="w-full bg-[#1a1a1a] text-white py-3 rounded font-bold hover:bg-black transition-colors disabled:opacity-50">
+                  {isLoggingIn ? '通信中...' : 'ログイン'}
+                </button>
               </div>
             ) : (
               <div className="space-y-4">
