@@ -5,12 +5,11 @@
 import React, { useState, useEffect } from 'react';
 
 // ==========================================
-//  設定エリア (燃料パイプ)
+//  ここが心臓部 (ボスのくれたURL)
 // ==========================================
-// ※ここがズレていると「通信エラー」になります
 const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec";
 
-// --- アイコン (外部依存なし) ---
+// --- アイコン ---
 const IconPhone = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>;
 const IconMenu = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
 const IconX = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
@@ -19,15 +18,12 @@ const IconLogOut = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" heig
 const IconChevronDown = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 12 15 18 9"></polyline></svg>;
 const IconAward = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>;
 
-// --- データ定義 ---
-// 通信失敗時用のフォールバックデータ（ここが表示されている＝通信エラー）
+// --- 初期データ (通信までのつなぎ) ---
 const FALLBACK_MARKET = 1350; 
 const FALLBACK_PRODUCTS = [
-  { id:1, name:'ピカ線 (1号銅線)', category:'pika', desc:'【通信エラー中】サンプルデータ表示中', ratio:98, priceMin:1300, priceMax:1450, tag:'通信エラー', specs:[], image:'https://images.unsplash.com/photo-1605517476562-b9247346b0a6?auto=format&fit=crop&q=80' },
-  { id:2, name:'CV・CVTケーブル', category:'cv', desc:'【通信エラー中】サンプルデータ表示中', ratio:65, priceMin:1100, priceMax:1450, tag:'通信エラー', specs:[], image:'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?auto=format&fit=crop&q=80' },
+  { id:1, name:'データ読込中...', category:'loading', desc:'サーバーから最新情報を取得しています', ratio:0, priceMin:0, priceMax:0, tag:'Loading', specs:[], image:'' },
 ];
 
-// 会員ランク定義
 const RANKS = [
   { name: 'REGULAR', limit: 0, pointRate: 0.005, color: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-300' },
   { name: 'GOLD', limit: 500000, pointRate: 0.01, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-400' },
@@ -35,9 +31,9 @@ const RANKS = [
 ];
 
 const FAQ_ITEMS = [
-  { q: "どんな電線でも買取できますか？", a: "基本的に銅を含む電線であれば買取可能です。ただし、アルミ電線のみ（銅なし）や、鉛被覆電線、極端に汚れがひどいものは対象外となる場合があります。" },
-  { q: "少量でも買取してもらえますか？", a: "はい、可能です。持込買取は100kgから、出張買取は500kgから対応しております。少量の場合はまとめてお持ち込みいただくとお得です。" },
-  { q: "会員登録の方法は？", a: "「完全招待制」となっております。初回のお取引完了時、レシートに記載された招待コードを使ってアカウントを作成いただけます。" },
+  { q: "どんな電線でも買取できますか？", a: "基本的に銅を含む電線であれば買取可能です。アルミ線のみや鉛被覆などは対象外となる場合があります。" },
+  { q: "少量でも買取してもらえますか？", a: "はい。持込は100kgから、出張は500kgから対応しております。" },
+  { q: "会員登録の方法は？", a: "完全招待制です。初回取引時のレシートにあるコードで登録いただけます。" },
 ];
 
 export default function LandingPage() {
@@ -47,8 +43,8 @@ export default function LandingPage() {
   // システム状態
   const [isPosOpen, setIsPosOpen] = useState(false);
   const [marketPrice, setMarketPrice] = useState(FALLBACK_MARKET);
-  const [isLoadingMarket, setIsLoadingMarket] = useState(false);
-  const [products, setProducts] = useState(FALLBACK_PRODUCTS); // 商品リストも動的に
+  const [isLoadingMarket, setIsLoadingMarket] = useState(true);
+  const [products, setProducts] = useState(FALLBACK_PRODUCTS);
   
   // ユーザー状態
   const [user, setUser] = useState(null);
@@ -58,49 +54,44 @@ export default function LandingPage() {
   const [loginPw, setLoginPw] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   
-  // POSカート・計算状態
+  // POS状態
   const [cart, setCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [calcValue, setCalcValue] = useState('0');
   const [calcModalOpen, setCalcModalOpen] = useState(false);
   const [isSorted, setIsSorted] = useState(false);
   const [usedPoints, setUsedPoints] = useState(0);
-  
-  // UI状態
-  const [activeTab, setActiveTab] = useState('pika'); // カテゴリ制御用（GAS側と合わせる必要あり）
+  const [activeTab, setActiveTab] = useState('pika');
   const [activeFaq, setActiveFaq] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
 
-    // 1. スプレッドシートから全データ（相場・商品）を取得
+    // ▼ データ取得ロジック
     const fetchSystemData = async () => {
       setIsLoadingMarket(true);
       try {
-        // 並列で取得
+        // 銅建値と商品リストを並列取得
         const [priceRes, productRes] = await Promise.all([
-            fetch(`${API_ENDPOINT}?action=get_market_price`, { mode: 'cors' }),
-            fetch(`${API_ENDPOINT}?action=get_products`, { mode: 'cors' })
+            fetch(`${API_ENDPOINT}?action=get_market_price`).catch(e => null),
+            fetch(`${API_ENDPOINT}?action=get_products`).catch(e => null)
         ]);
 
-        if (priceRes.ok) {
+        if (priceRes && priceRes.ok) {
           const data = await priceRes.json();
           if (data && data.price) setMarketPrice(data.price);
         }
 
-        if (productRes.ok) {
+        if (productRes && productRes.ok) {
             const pData = await productRes.json();
             if (pData && pData.products && pData.products.length > 0) {
                 setProducts(pData.products);
-                // カテゴリ初期値を最初の商品に合わせる
                 if(pData.products[0].category) setActiveTab(pData.products[0].category);
             }
         }
-
       } catch (e) {
-        console.warn("System Data Fetch Failed, switching to simulation mode.", e);
-        // フォールバック維持
+        console.warn("Data Fetch Error", e);
       } finally {
         setIsLoadingMarket(false);
       }
@@ -108,15 +99,9 @@ export default function LandingPage() {
 
     fetchSystemData();
 
-    // 2. ログイン状態の自動復元
-    try {
-      const storedUser = localStorage.getItem('tsukisamu_user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
-    } catch (e) {
-      console.error("Login restore failed", e);
-    }
+    // ログイン復元
+    const storedUser = localStorage.getItem('tsukisamu_user');
+    if (storedUser) setUser(JSON.parse(storedUser));
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -132,36 +117,44 @@ export default function LandingPage() {
   const handleLogin = async () => {
     setIsLoggingIn(true);
     try {
-      const res = await fetch(`${API_ENDPOINT}?action=login&id=${loginId}&pw=${loginPw}`, { mode: 'cors' });
+      // APIログイン
+      const res = await fetch(`${API_ENDPOINT}?action=login&id=${loginId}&pw=${loginPw}`);
       if (res.ok) {
         const data = await res.json();
-        if (data && data.success) {
-          const u = data.user;
-          setUser(u);
-          localStorage.setItem('tsukisamu_user', JSON.stringify(u));
+        if (data && data.success && data.user) {
+          setUser(data.user);
+          localStorage.setItem('tsukisamu_user', JSON.stringify(data.user));
           setLoginModalOpen(false);
           setIsLoggingIn(false);
           return;
-        } else {
-            alert('ログイン失敗: IDまたはパスワードが間違っています。');
         }
       }
+      
+      // バックアップログイン (通信失敗時用デモ)
+      if(loginId==='user' && loginPw==='user') {
+         const demoUser = { name:'山田建設(Demo)', id:'u01', points:15000, monthScore:650000 };
+         setUser(demoUser);
+         localStorage.setItem('tsukisamu_user', JSON.stringify(demoUser));
+         setLoginModalOpen(false);
+         alert('通信環境等の理由によりデモアカウントでログインしました。');
+      } else {
+         alert('ログイン失敗: ID/Passを確認してください。');
+      }
     } catch (e) {
-      console.warn("API Login Failed", e);
-      alert('通信エラー: サーバーに接続できませんでした。');
+      alert('通信エラーが発生しました。');
     }
     setIsLoggingIn(false);
   };
 
   const handleRegister = (code, name) => {
     if(code === 'FIRST-DEAL') {
-      const u = { name: name, id:'new_member', points:1000, monthScore:0, qualityScore: 50 };
+      const u = { name: name, id:'new_member', points:1000, monthScore:0 };
       setUser(u);
       localStorage.setItem('tsukisamu_user', JSON.stringify(u));
       setLoginModalOpen(false);
-      alert('認証成功！会員登録が完了しました。\n初回特典: 1000pt 付与');
+      alert('認証成功！初回特典: 1000pt');
     } else {
-      alert('招待コードが無効です。\n初回取引時のレシートをご確認ください。');
+      alert('招待コードが無効です。');
     }
   };
 
@@ -191,25 +184,20 @@ export default function LandingPage() {
   };
 
   const subTotal = cart.reduce((a,b) => a + b.subtotal, 0);
-  const tax = Math.floor(subTotal * 0.1);
-  const total = subTotal + tax - (usedPoints || 0); 
+  const total = subTotal - usedPoints;
   const rankInfo = user ? getRankInfo(user.monthScore) : { current: RANKS[0] };
   const earnPoints = Math.floor(subTotal * rankInfo.current.pointRate);
-
-  // カテゴリのユニークリスト作成（重複排除）
-  const categories = Array.from(new Set(products.map(p => p.category || p.maker))).filter(Boolean);
+  
+  // カテゴリ一覧生成
+  const categories = Array.from(new Set(products.map(p => p.category))).filter(c => c && c !== 'loading');
 
   return (
     <div className="min-h-screen font-sans text-[#1a1a1a] bg-white">
-      
       {/* Header */}
       <header className={`fixed top-0 w-full z-40 transition-all duration-300 border-b ${isScrolled ? 'bg-white/95 backdrop-blur shadow-md py-2' : 'bg-white py-4 border-[#e0e0e0]'}`}>
         <div className="container mx-auto px-4 md:px-6 flex justify-between items-center">
           <div className="flex flex-col">
-            <h1 className="text-xl font-bold tracking-tight text-[#1a1a1a] leading-tight">
-              株式会社月寒製作所<br/>
-              <span className="text-sm text-[#D32F2F] font-bold">苫小牧工場</span>
-            </h1>
+            <h1 className="text-xl font-bold tracking-tight text-[#1a1a1a] leading-tight">株式会社月寒製作所<br/><span className="text-sm text-[#D32F2F] font-bold">苫小牧工場</span></h1>
           </div>
           <nav className="hidden lg:flex items-center gap-6 text-sm font-bold text-[#1a1a1a]">
             <a href="#features" className="hover:text-[#D32F2F]">特徴</a>
@@ -232,6 +220,7 @@ export default function LandingPage() {
           </nav>
           <button className="lg:hidden p-2 text-[#1a1a1a]" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>{mobileMenuOpen ? <IconX /> : <IconMenu />}</button>
         </div>
+        {mobileMenuOpen && <div className="absolute top-full left-0 w-full bg-white border-b p-4 shadow-xl flex flex-col gap-4 lg:hidden"><button onClick={() => setIsPosOpen(true)} className="bg-[#1a1a1a] text-white w-full py-3 rounded font-bold">買取システム起動</button></div>}
       </header>
 
       {/* Hero */}
@@ -247,38 +236,34 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Dynamic Product Section */}
+      {/* Items Section */}
       <section id="items" className="py-24 bg-white">
         <div className="container mx-auto px-4 max-w-6xl">
-          <h2 className="text-4xl font-black text-center mb-12">主要な電線の<span className="text-[#D32F2F] relative inline-block">種類と特徴<span className="absolute bottom-[-8px] left-0 w-full h-1 bg-[#D32F2F]"></span></span></h2>
+          <h2 className="text-4xl font-black text-center mb-12">主要な電線の<span className="text-[#D32F2F] relative inline-block">種類と特徴</span></h2>
           
-          {/* Dynamic Tabs */}
           <div className="flex flex-wrap justify-center gap-2 mb-10">
             {categories.length > 0 ? categories.map((cat, idx) => (
-              <button key={idx} onClick={() => setActiveTab(cat)} className={`px-8 py-3 font-bold transition-all border ${activeTab === cat ? 'bg-[#D32F2F] text-white border-[#D32F2F]' : 'bg-white text-[#666666] border-[#e0e0e0] hover:border-[#D32F2F] hover:text-[#D32F2F]'}`}>
-                {cat}
-              </button>
-            )) : <div className="text-gray-400">商品データを読み込み中...</div>}
+              <button key={idx} onClick={() => setActiveTab(cat)} className={`px-8 py-3 font-bold transition-all border ${activeTab === cat ? 'bg-[#D32F2F] text-white border-[#D32F2F]' : 'bg-white text-[#666666] border-[#e0e0e0] hover:border-[#D32F2F] hover:text-[#D32F2F]'}`}>{cat}</button>
+            )) : <div className="text-gray-400">データ読込中...</div>}
           </div>
 
           <div className="bg-[#f8f8f8] border border-[#e0e0e0] p-6 md:p-10 flex flex-col md:flex-row gap-10 items-start shadow-sm animate-fade-in">
              <div className="w-full md:w-1/2 aspect-[4/3] bg-gray-100 overflow-hidden border border-[#e0e0e0]">
-               <img src={products.find(p => (p.category || p.maker) === activeTab)?.image} alt="Wire" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"/>
+               <img src={products.find(p => p.category === activeTab)?.image} alt="Wire" className="w-full h-full object-cover"/>
              </div>
              <div className="flex-1 w-full">
                <div className="flex justify-between items-start mb-4">
-                 <h3 className="text-2xl font-black text-[#1a1a1a]">{products.find(p => (p.category || p.maker) === activeTab)?.name}</h3>
-                 <span className="bg-orange-100 text-orange-800 text-xs font-bold px-3 py-1 rounded">{products.find(p => (p.category || p.maker) === activeTab)?.tag}</span>
+                 <h3 className="text-2xl font-black text-[#1a1a1a]">{products.find(p => p.category === activeTab)?.name}</h3>
+                 <span className="bg-orange-100 text-orange-800 text-xs font-bold px-3 py-1 rounded">{products.find(p => p.category === activeTab)?.tag}</span>
                </div>
-               <p className="text-[#666666] mb-8 leading-relaxed border-b border-[#e0e0e0] pb-6">{products.find(p => (p.category || p.maker) === activeTab)?.desc}</p>
+               <p className="text-[#666666] mb-8 leading-relaxed border-b border-[#e0e0e0] pb-6">{products.find(p => p.category === activeTab)?.desc}</p>
                <div className="bg-white p-6 border-l-4 border-[#D32F2F] mb-6 shadow-sm">
                  <div className="font-bold text-[#1a1a1a] mb-1">参考買取価格</div>
                  <div className="text-xl font-black text-[#D32F2F]">
-                   {products.find(p => (p.category || p.maker) === activeTab)?.priceMin?.toLocaleString()}円 ～ {products.find(p => (p.category || p.maker) === activeTab)?.priceMax?.toLocaleString()}円 / kg
+                   {products.find(p => p.category === activeTab)?.priceMin?.toLocaleString()}円 ～ {products.find(p => p.category === activeTab)?.priceMax?.toLocaleString()}円 / kg
                  </div>
-                 <div className="text-xs text-[#666666] mt-1">※銅建値や状態により変動します</div>
                </div>
-               <button onClick={() => setIsPosOpen(true)} className="w-full bg-[#1a1a1a] text-white py-4 rounded font-bold hover:bg-black transition-colors">{user ? 'この品目をPOSに追加する' : '買取シミュレーションに追加'}</button>
+               <button onClick={() => setIsPosOpen(true)} className="w-full bg-[#1a1a1a] text-white py-4 rounded font-bold hover:bg-black transition-colors">{user ? 'POSに追加' : 'シミュレーションに追加'}</button>
              </div>
           </div>
         </div>
@@ -306,7 +291,6 @@ export default function LandingPage() {
                     return (
                       <button key={p.id} onClick={() => { setSelectedProduct(p); setCalcModalOpen(true); }} className="bg-white p-4 rounded border border-[#e0e0e0] shadow-sm hover:border-[#D32F2F] hover:shadow-md transition-all text-left">
                         <div className="text-xs font-bold text-[#D32F2F] mb-1">{p.name}</div>
-                        <div className="text-[10px] text-[#666666] mb-2">{p.tag}</div>
                         <div className="flex justify-between items-end"><span className="text-lg font-black text-[#1a1a1a]">¥{unit.toLocaleString()}</span><span className="text-xs text-[#666666]">/kg</span></div>
                       </button>
                     )
@@ -321,9 +305,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <div className="p-6 bg-[#f8f8f8] border-t border-[#e0e0e0] shrink-0">
-                  {user && user.points > 0 && <div className="mb-4 text-xs"><div className="flex justify-between items-center mb-1"><span className="font-bold text-[#666666]">保有ポイント利用</span><span>{user.points.toLocaleString()} pt</span></div><input type="number" className="w-full border p-2 rounded" placeholder="利用pt" max={user.points} value={usedPoints} onChange={(e) => setUsedPoints(Math.min(user.points, parseInt(e.target.value) || 0))}/></div>}
                   <div className="flex justify-between items-end mb-1"><span className="font-bold text-[#666666]">合計支払額</span><span className="text-3xl font-black text-[#D32F2F]">¥{total.toLocaleString()}</span></div>
-                  {user ? <div className="text-right text-xs font-bold text-[#D32F2F] mb-4">獲得予定: {earnPoints} pt (ランク {rankInfo.current.pointRate*100}%)</div> : <div className="text-right text-xs text-[#666666] mb-4"><button onClick={() => setLoginModalOpen(true)} className="underline hover:text-[#D32F2F]">会員登録でポイントが貯まります</button></div>}
                   <button onClick={() => window.print()} className="w-full bg-[#1a1a1a] text-white py-4 rounded font-bold hover:bg-black transition-colors flex justify-center gap-2">明細書を発行する</button>
                 </div>
               </div>
