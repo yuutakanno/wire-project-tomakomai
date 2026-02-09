@@ -2,15 +2,14 @@
 /* eslint-disable */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // ==========================================
 //  設定・データ定義
 // ==========================================
 const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec";
 
-// ★ 2026年のリアルな銅建値データ (kg単価換算済み)
-// スクレイピング結果に基づき、1月からの推移を定義
+// ★ 2026年のリアルな銅建値データ (日足ベース)
 const REAL_HISTORY_2026 = [
   { date: '1/4', value: 2050 }, { date: '1/6', value: 2150 },
   { date: '1/8', value: 2110 }, { date: '1/13', value: 2190 },
@@ -20,10 +19,10 @@ const REAL_HISTORY_2026 = [
 ];
 
 const FAQ_ITEMS = [
-  { q: "インボイス制度には対応していますか？", a: "はい、完全対応しております。適格請求書発行事業者として登録済み（T1234...）ですので、法人のお客様も安心してご利用いただけます。買取明細書もインボイス対応形式で発行可能です。" },
-  { q: "被覆付きの電線でもそのまま持ち込めますか？", a: "もちろんです！当社は自社プラントで剥離・粉砕処理を行うため、被覆がついたままの状態での買取に特化しています。面倒な剥離作業は不要です。" },
-  { q: "最小ロットはありますか？", a: "ありません。1kgからトラック1台分まで、どのような数量でも歓迎いたします。ただし、1tを超える大口持ち込みの場合は事前にご連絡いただけるとスムーズです。" },
-  { q: "支払いはいつになりますか？", a: "検収完了後、その場で現金にてお支払いいたします。法人様で掛け売り（請求書払い・振込）をご希望の場合は別途ご相談ください。" }
+  { q: "インボイス制度には対応していますか？", a: "はい、完全対応しております。適格請求書発行事業者として登録済みですので、法人のお客様も安心してご利用いただけます。" },
+  { q: "被覆付きの電線でもそのまま持ち込めますか？", a: "もちろんです！当社は自社プラントで剥離・粉砕処理を行うため、被覆がついたままの状態での買取に特化しています。" },
+  { q: "最小ロットはありますか？", a: "ありません。1kgからトラック1台分まで、どのような数量でも歓迎いたします。" },
+  { q: "支払いはいつになりますか？", a: "検収完了後、その場で現金にてお支払いいたします。" }
 ];
 
 const RANKS = [
@@ -40,49 +39,112 @@ const IconMenu = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height
 const IconX = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 const IconCalculator = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><path d="M16 10h.01"></path><path d="M12 10h.01"></path><path d="M8 10h.01"></path><path d="M12 14h.01"></path><path d="M8 14h.01"></path><path d="M12 18h.01"></path><path d="M8 18h.01"></path></svg>;
 const IconChevronDown = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 12 15 18 9"></polyline></svg>;
-const IconTruck = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
 const IconZap = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
 const IconShield = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>;
+const IconTruck = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
 
-
-// --- Chart Component (SVG) ---
-const SimpleChart = ({ data, color = "#ef4444" }) => {
+// --- ★Interactive Real Chart Component ---
+const RealChart = ({ data, color = "#ef4444" }) => {
+  const [activePoint, setActivePoint] = useState(null);
+  
   if (!data || data.length === 0) return null;
-  const max = Math.max(...data.map(d => d.value)) + 50;
-  const min = Math.min(...data.map(d => d.value)) - 50;
-  const range = max - min;
-  const height = 120;
-  const width = 400; 
+  
+  // スケール計算
+  const maxVal = Math.max(...data.map(d => d.value));
+  const minVal = Math.min(...data.map(d => d.value));
+  const padding = (maxVal - minVal) * 0.2; // 上下に20%の余白
+  const yMax = maxVal + padding;
+  const yMin = minVal - padding;
+  const yRange = yMax - yMin;
+  
+  const width = 100; // SVG coordinate percentages
+  const height = 100;
 
-  const points = data.map((d, i) => {
-    const x = (i / (data.length - 1)) * width;
-    const y = height - ((d.value - min) / range) * height;
-    return `${x},${y}`;
-  }).join(' ');
+  // 座標変換関数
+  const getX = (index) => (index / (data.length - 1)) * width;
+  const getY = (value) => height - ((value - yMin) / yRange) * height;
+
+  const points = data.map((d, i) => `${getX(i)},${getY(d.value)}`).join(' ');
 
   return (
-    <div className="w-full h-40 relative group cursor-crosshair">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={color} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <line x1="0" y1="0" x2={width} y2="0" stroke="#eee" strokeWidth="0.5" strokeDasharray="4" />
-        <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="#eee" strokeWidth="0.5" strokeDasharray="4" />
-        <line x1="0" y1={height} x2={width} y2={height} stroke="#eee" strokeWidth="0.5" strokeDasharray="4" />
-        <path d={`M${points}`} fill="none" stroke={color} strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
-        <path d={`M ${points} L ${width},${height} L 0,${height} Z`} fill="url(#gradient)" stroke="none" />
-        <circle cx={width} cy={height - ((data[data.length-1].value - min) / range) * height} r="4" fill={color} className="animate-pulse" />
-      </svg>
-      {/* ツールチップ的な情報表示 */}
-      <div className="absolute top-0 right-0 bg-white/90 px-2 py-1 text-[10px] font-bold rounded text-slate-500 shadow-sm">
-         Max: ¥{max-50}
-      </div>
-      <div className="absolute bottom-0 left-0 bg-white/90 px-2 py-1 text-[10px] font-bold rounded text-slate-500 shadow-sm">
-         Min: ¥{min+50}
-      </div>
+    <div className="w-full relative select-none" onMouseLeave={() => setActivePoint(null)}>
+       {/* 1. Header: Current Status */}
+       <div className="flex justify-between items-end mb-4 px-2">
+          <div>
+            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+              {activePoint ? activePoint.date : 'Current Price'}
+            </div>
+            <div className="text-3xl font-black text-white flex items-center gap-2">
+              ¥{activePoint ? activePoint.value.toLocaleString() : data[data.length-1].value.toLocaleString()} 
+              <span className="text-sm font-normal text-slate-500">/kg</span>
+            </div>
+          </div>
+          {/* Trend Indicator */}
+          <div className="text-right">
+             <div className="text-green-400 text-xs font-bold flex items-center justify-end gap-1 mb-1">
+               <IconArrowUp /> 日足 (Daily)
+             </div>
+             <div className="text-[10px] text-slate-500">JX金属建値連動</div>
+          </div>
+       </div>
+
+       {/* 2. The Chart Area */}
+       <div className="h-48 w-full relative border-l border-b border-slate-700/50 bg-slate-800/20 rounded-lg overflow-hidden">
+          <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+                <stop offset="100%" stopColor={color} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+
+            {/* Grid Lines (Price Axis) */}
+            {[0.25, 0.5, 0.75].map(p => (
+              <line key={p} x1="0" y1={height * p} x2={width} y2={height * p} stroke="#334155" strokeWidth="0.2" strokeDasharray="1" />
+            ))}
+
+            {/* Area Fill */}
+            <path d={`M ${points} L ${width},${height} L 0,${height} Z`} fill="url(#gradient)" stroke="none" />
+            
+            {/* Line Graph */}
+            <path d={`M${points}`} fill="none" stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+
+            {/* Interaction Areas & Tooltip Logic */}
+            {data.map((d, i) => (
+              <g key={i}>
+                {/* Invisible Hover Rect for easier touching */}
+                <rect 
+                  x={getX(i) - (width/data.length)/2} 
+                  y="0" 
+                  width={width/data.length} 
+                  height="100" 
+                  fill="transparent" 
+                  onMouseEnter={() => setActivePoint(d)}
+                  onTouchStart={() => setActivePoint(d)}
+                />
+                
+                {/* Active Point Indicator */}
+                {activePoint && activePoint.date === d.date && (
+                   <g>
+                     <line x1={getX(i)} y1="0" x2={getX(i)} y2="100" stroke="white" strokeWidth="0.5" strokeDasharray="2" vectorEffect="non-scaling-stroke" />
+                     <circle cx={getX(i)} cy={getY(d.value)} r="3" fill="white" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                   </g>
+                )}
+              </g>
+            ))}
+          </svg>
+          
+          {/* Price Labels (Y-Axis) - Absolute positioning */}
+          <div className="absolute top-0 right-1 text-[9px] text-slate-500">¥{Math.floor(yMax).toLocaleString()}</div>
+          <div className="absolute bottom-0 right-1 text-[9px] text-slate-500">¥{Math.floor(yMin).toLocaleString()}</div>
+       </div>
+
+       {/* 3. Date Labels (X-Axis) */}
+       <div className="flex justify-between text-[9px] text-slate-500 px-1 mt-1 font-mono">
+          <span>{data[0].date}</span>
+          <span>{data[Math.floor(data.length/2)].date}</span>
+          <span>{data[data.length-1].date}</span>
+       </div>
     </div>
   );
 };
@@ -91,18 +153,15 @@ export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // System Data
   const [marketPrice, setMarketPrice] = useState(0); 
   const [chartData, setChartData] = useState([]); 
   const [products, setProducts] = useState([]);
   
-  // User Data
   const [user, setUser] = useState(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [loginId, setLoginId] = useState('');
   const [loginPw, setLoginPw] = useState('');
   
-  // App State
   const [isPosOpen, setIsPosOpen] = useState(false);
   const [cart, setCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -122,7 +181,7 @@ export default function LandingPage() {
             fetch(`${API_ENDPOINT}?action=get_products`).catch(e => null)
         ]);
 
-        let currentPrice = 2100; // 初期値
+        let currentPrice = 2100; 
         if (priceRes && priceRes.ok) {
           const data = await priceRes.json();
           if (data && data.price) {
@@ -131,14 +190,11 @@ export default function LandingPage() {
           }
         }
 
-        // ★チャートデータの生成ロジック
-        // 1. 2026年の確定履歴データをベースにする
         const history = [...REAL_HISTORY_2026];
-        
-        // 2. もしGASから取れた最新価格が、履歴の最後と違えば「今日」として追加
         const lastHist = history[history.length - 1];
         if (lastHist.value !== currentPrice) {
-           history.push({ date: 'Today', value: currentPrice });
+           const today = new Date();
+           history.push({ date: `${today.getMonth()+1}/${today.getDate()}`, value: currentPrice });
         }
         setChartData(history);
 
@@ -240,7 +296,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Section with REAL CHART */}
+      {/* Hero Section with INTERACTIVE REAL CHART */}
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-4 bg-slate-900 text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1565610261709-5c5697d74556?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-20"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/90 to-transparent"></div>
@@ -267,30 +323,18 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Chart Card */}
+          {/* Interactive Chart Card */}
           <div className="bg-[#1e293b] border border-slate-700 rounded-2xl p-6 shadow-2xl animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
-             <div className="flex justify-between items-end mb-4">
-                <div>
-                   <div className="text-xs text-slate-400 font-bold uppercase tracking-widest">Copper Market Price (Japan)</div>
-                   <div className="text-4xl font-black text-white flex items-center gap-2">
-                     ¥{marketPrice.toLocaleString()} <span className="text-lg font-normal text-slate-500">/kg</span>
-                   </div>
-                </div>
-                <div className="text-green-400 text-sm font-bold flex items-center gap-1 bg-green-400/10 px-2 py-1 rounded">
-                   <IconArrowUp /> High Trend
-                </div>
-             </div>
-             {/* ★2026年のリアルデータチャート */}
-             <SimpleChart data={chartData} color="#ef4444" />
+             <RealChart data={chartData} color="#ef4444" />
              <div className="mt-4 pt-4 border-t border-slate-700 text-xs text-slate-500 flex justify-between">
                 <span>Source: JX Nippon Mining & Metals</span>
-                <span>Range: 2026/01 - Present</span>
+                <span>Update: Auto (Daily)</span>
              </div>
           </div>
         </div>
       </section>
 
-      {/* Features (復旧) */}
+      {/* Features */}
       <section id="features" className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -317,7 +361,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Ranks (Motivation) */}
+      {/* Ranks */}
       <section id="rank" className="py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -351,7 +395,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FAQ (復旧) */}
+      {/* FAQ */}
       <section id="faq" className="py-20 bg-gray-50">
         <div className="container mx-auto px-4 max-w-3xl">
           <div className="text-center mb-16">
@@ -375,7 +419,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer (復旧) */}
+      {/* Footer */}
       <footer className="bg-[#1a1a1a] text-[#999999] py-16 text-sm border-t border-gray-800">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
@@ -406,7 +450,7 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* POS Modal (The Tool) */}
+      {/* POS Modal */}
       {isPosOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-200">
           <div className="bg-white w-full md:max-w-6xl h-[95vh] md:h-[90vh] md:rounded-2xl shadow-2xl flex flex-col overflow-hidden relative">
