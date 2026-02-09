@@ -2,12 +2,19 @@
 /* eslint-disable */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // ==========================================
 //  設定エリア
 // ==========================================
 const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec";
+
+// --- ランク定義 (仕様書準拠) ---
+const CONDITION_RANKS = {
+  A: { label: 'A:優良', rate: 1.02, color: 'bg-green-100 text-green-800 border-green-300', desc: '分別済・異物なし (+2%)' },
+  B: { label: 'B:標準', rate: 1.00, color: 'bg-gray-100 text-gray-800 border-gray-300', desc: '通常の状態' },
+  C: { label: 'C:手間', rate: 0.95, color: 'bg-red-100 text-red-800 border-red-300', desc: '泥付・団子・混合 (-5%)' }
+};
 
 // --- アイコン ---
 const IconPhone = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>;
@@ -17,6 +24,8 @@ const IconCalculator = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" 
 const IconLogOut = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
 const IconChevronDown = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 12 15 18 9"></polyline></svg>;
 const IconAward = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>;
+const IconCamera = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>;
+const IconPrinter = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>;
 
 // --- 初期データ ---
 const FALLBACK_MARKET = 1350; 
@@ -59,12 +68,14 @@ export default function LandingPage() {
   const [loginPw, setLoginPw] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   
-  // POS状態
+  // POS状態 (新機能追加)
   const [cart, setCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [calcValue, setCalcValue] = useState('0');
   const [calcModalOpen, setCalcModalOpen] = useState(false);
-  const [isSorted, setIsSorted] = useState(false);
+  const [currentCondition, setCurrentCondition] = useState('B'); // A, B, C
+  const [transactionComplete, setTransactionComplete] = useState(false);
+  const [lastTransactionId, setLastTransactionId] = useState('');
   const [usedPoints, setUsedPoints] = useState(0);
   const [activeTab, setActiveTab] = useState('pika');
   const [activeFaq, setActiveFaq] = useState(null);
@@ -84,7 +95,6 @@ export default function LandingPage() {
 
         if (priceRes && priceRes.ok) {
           const data = await priceRes.json();
-          // 数値チェックと反映
           if (data && data.price && !isNaN(data.price)) {
             console.log("Market Price Loaded:", data.price);
             setMarketPrice(Number(data.price));
@@ -139,13 +149,12 @@ export default function LandingPage() {
         }
       }
     } catch (e) {
-      // バックアップログイン
       if(loginId==='user' && loginPw==='user') {
          const demoUser = { name:'山田建設(Demo)', id:'u01', points:15000, monthScore:650000 };
          setUser(demoUser);
          localStorage.setItem('tsukisamu_user', JSON.stringify(demoUser));
          setLoginModalOpen(false);
-         alert('通信環境等の理由によりデモアカウントでログインしました。');
+         alert('デモアカウントでログインしました。');
       } else {
          alert('通信エラーが発生しました。');
       }
@@ -173,21 +182,56 @@ export default function LandingPage() {
     }
   };
 
+  // --- POS: カート追加（ランク計算ロジック） ---
   const addToCart = () => {
     const w = parseFloat(calcValue);
     if(w > 0 && selectedProduct) {
-      let unit = Math.floor(marketPrice * (selectedProduct.ratio/100));
-      if (isSorted) unit = Math.floor(unit * 1.02);
-      setCart([...cart, { ...selectedProduct, weight: w, unit: unit, subtotal: Math.floor(w * unit), sorted: isSorted }]);
+      const condition = CONDITION_RANKS[currentCondition];
+      
+      // 基本単価 = 建値 * 銅率
+      let baseUnit = Math.floor(marketPrice * (selectedProduct.ratio/100));
+      // ランク補正
+      let finalUnit = Math.floor(baseUnit * condition.rate);
+
+      setCart([...cart, { 
+        ...selectedProduct, 
+        weight: w, 
+        unit: finalUnit, 
+        subtotal: Math.floor(w * finalUnit),
+        condition: currentCondition // A/B/C
+      }]);
       setCalcModalOpen(false);
       setCalcValue('0');
-      setIsSorted(false);
+      setCurrentCondition('B'); // Reset to Normal
     }
   };
 
   const handleCalcInput = (v) => {
     if(v === '.' && calcValue.includes('.')) return;
     setCalcValue(prev => prev === '0' && v !== '.' ? v : prev + v);
+  };
+
+  // --- POS: 取引完了＆ID発行 ---
+  const completeTransaction = () => {
+    if(cart.length === 0) return;
+    if(!confirm('取引を確定し、買取伝票を発行しますか？')) return;
+
+    // ID生成: YYYYMMDD-HHMM
+    const now = new Date();
+    const id = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+    
+    setLastTransactionId(id);
+    setTransactionComplete(true);
+    
+    // ※ここで将来的にGASへデータをPOSTする処理が入ります
+    console.log("Transaction Finalized:", { id, cart, total: subTotal - usedPoints, user: user?.id });
+  };
+
+  const resetPos = () => {
+    setCart([]);
+    setUsedPoints(0);
+    setTransactionComplete(false);
+    setLastTransactionId('');
   };
 
   const subTotal = cart.reduce((a,b) => a + b.subtotal, 0);
@@ -210,7 +254,6 @@ export default function LandingPage() {
             <a href="#items" className="hover:text-[#D32F2F] transition-colors">買取品目</a>
             <a href="#process" className="hover:text-[#D32F2F] transition-colors">流れ</a>
             <a href="#faq" className="hover:text-[#D32F2F] transition-colors">FAQ</a>
-            <a href="#company" className="hover:text-[#D32F2F] transition-colors">会社概要</a>
             {user ? (
               <div className="flex items-center gap-4 ml-4">
                 <div className={`flex flex-col items-end px-4 py-1 rounded border ${rankInfo.current.bg} ${rankInfo.current.border}`}>
@@ -229,9 +272,6 @@ export default function LandingPage() {
           <button className="lg:hidden p-2 text-[#1a1a1a]" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>{mobileMenuOpen ? <IconX /> : <IconMenu />}</button>
         </div>
         {mobileMenuOpen && <div className="absolute top-full left-0 w-full bg-white border-b p-4 shadow-xl flex flex-col gap-4 lg:hidden">
-            {['特徴','電線の種類','買取の流れ','FAQ','会社概要'].map((item,i) => (
-              <a key={i} href={`#${item === '会社概要' ? 'company' : item === '電線の種類' ? 'items' : item === '買取の流れ' ? 'process' : 'features'}`} onClick={() => setMobileMenuOpen(false)} className="font-bold p-2 border-b border-gray-100">{item}</a>
-            ))}
             <button onClick={() => {setIsPosOpen(true); setMobileMenuOpen(false);}} className="bg-[#1a1a1a] text-white w-full py-3 rounded font-bold">買取システム起動</button>
         </div>}
       </header>
@@ -301,23 +341,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Process Section */}
-      <section id="process" className="py-24 bg-[#f8f8f8]">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <h2 className="text-4xl font-black text-center mb-16">買取の<span className="text-[#D32F2F] relative inline-block">流れ<span className="absolute bottom-[-8px] left-0 w-full h-1 bg-[#D32F2F]"></span></span></h2>
-          <div className="grid md:grid-cols-2 gap-12">
-            <div className="bg-white border border-[#e0e0e0] shadow-sm">
-              <div className="bg-gray-100 p-6 border-b border-[#e0e0e0] text-center"><h3 className="text-xl font-black">持込買取</h3><p className="text-[#D32F2F] font-black text-2xl mt-2">100kg～</p></div>
-              <div className="p-8"><ul className="space-y-4">{['お電話またはメールでご連絡','身分証明書をお持ちの上、工場へ','トラックスケールで計量・査定','その場で現金お支払い'].map((s,i)=><li key={i} className="flex gap-4"><span className="bg-[#D32F2F] text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">{i+1}</span><span className="text-sm">{s}</span></li>)}</ul></div>
-            </div>
-            <div className="bg-white border border-[#e0e0e0] shadow-sm">
-              <div className="bg-gray-100 p-6 border-b border-[#e0e0e0] text-center"><h3 className="text-xl font-black">出張買取</h3><p className="text-[#D32F2F] font-black text-2xl mt-2">500kg～</p></div>
-              <div className="p-8"><ul className="space-y-4">{['お電話で重量・種類をご相談','訪問日時を調整してお伺い','現地で計量・査定','回収完了後、当日現金払い'].map((s,i)=><li key={i} className="flex gap-4"><span className="bg-[#1a1a1a] text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">{i+1}</span><span className="text-sm">{s}</span></li>)}</ul></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* FAQ Section */}
       <section id="faq" className="py-24 bg-white">
         <div className="container mx-auto px-4 max-w-3xl">
@@ -338,52 +361,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Company Section */}
-      <section id="company" className="py-24 bg-[#f8f8f8]">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <h2 className="text-4xl font-black text-center mb-16">会社<span className="text-[#D32F2F] relative inline-block">情報<span className="absolute bottom-[-8px] left-0 w-full h-1 bg-[#D32F2F]"></span></span></h2>
-          <div className="grid md:grid-cols-2 gap-12">
-            <div className="bg-white p-8 border border-[#e0e0e0]">
-              <table className="w-full text-sm text-left border-collapse">
-                <tbody>
-                  {[
-                    {l:'社名',v:'株式会社月寒製作所 苫小牧工場'},
-                    {l:'所在地',v:'〒053-0001 北海道苫小牧市一本松町9-6'},
-                    {l:'電話番号',v:'0144-55-5544'},
-                    {l:'事業内容',v:'非鉄金属リサイクル、銅ナゲット製造'},
-                    {l:'許可',v:'北海道知事許可（般-18）石第00857号\n産廃処分業許可 第00120077601号'}
-                  ].map((row,i) => (
-                    <tr key={i} className="border-b border-[#e0e0e0] last:border-0"><th className="py-4 font-bold text-[#1a1a1a] w-32 align-top">{row.l}</th><td className="py-4 text-[#666666] align-top whitespace-pre-line">{row.v}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="h-full min-h-[300px] bg-gray-200 border border-[#e0e0e0] relative">
-               <div className="absolute inset-0 flex items-center justify-center text-gray-500 font-bold bg-gray-100">
-                  <iframe width="100%" height="100%" style={{border:0}} loading="lazy" src="https://maps.google.com/maps?q=42.6687351,141.673752&z=15&output=embed"></iframe>
-               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className="py-24 bg-white">
-        <div className="container mx-auto px-4 max-w-3xl">
-            <h2 className="text-4xl font-black text-center mb-12">お問い<span className="text-[#D32F2F]">合わせ</span></h2>
-            <div className="bg-[#f8f8f8] p-8 md:p-12 border border-[#e0e0e0]">
-                <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); alert('お問い合わせありがとうございます。'); }}>
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <div><label className="block font-bold text-[#1a1a1a] mb-2">お名前</label><input type="text" className="w-full p-3 border border-[#e0e0e0] bg-white"/></div>
-                        <div><label className="block font-bold text-[#1a1a1a] mb-2">電話番号</label><input type="tel" className="w-full p-3 border border-[#e0e0e0] bg-white"/></div>
-                    </div>
-                    <div><label className="block font-bold text-[#1a1a1a] mb-2">お問い合わせ内容</label><textarea className="w-full p-3 border border-[#e0e0e0] bg-white h-32"></textarea></div>
-                    <button type="submit" className="w-full bg-[#D32F2F] text-white py-4 font-bold text-lg hover:bg-[#B71C1C] transition-colors shadow-lg">送信する</button>
-                </form>
-            </div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="bg-[#1a1a1a] text-[#999999] py-16 text-sm">
         <div className="container mx-auto px-4 grid md:grid-cols-3 gap-12 text-center md:text-left">
@@ -394,57 +371,128 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 mt-12 pt-8 border-t border-[#333333] text-center"><p>© 2026 Tsukisamu Seisakusho Co., Ltd. All Rights Reserved.</p></div>
       </footer>
 
-      {/* POS System */}
+      {/* POS System & Transaction Flow */}
       {isPosOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full md:max-w-4xl h-[90vh] md:h-auto md:max-h-[90vh] md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
-            <div className="bg-[#1a1a1a] text-white p-4 flex justify-between items-center shrink-0">
-              <div className="flex items-center gap-4">
-                <div className="font-bold text-lg flex items-center gap-2"><IconCalculator /> {user ? '会員専用POS' : '買取シミュレーター'}</div>
-                {user && <span className={`text-xs px-2 py-0.5 rounded font-bold bg-white text-black`}>{rankInfo.current.name}</span>}
+          
+          {/* 1. 通常POS画面 */}
+          {!transactionComplete ? (
+            <div className="bg-white w-full md:max-w-4xl h-[90vh] md:h-auto md:max-h-[90vh] md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300">
+              <div className="bg-[#1a1a1a] text-white p-4 flex justify-between items-center shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="font-bold text-lg flex items-center gap-2"><IconCalculator /> {user ? '会員専用POS' : '買取シミュレーター'}</div>
+                  {user && <span className={`text-xs px-2 py-0.5 rounded font-bold bg-white text-black`}>{rankInfo.current.name}</span>}
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="hidden md:block text-xs text-orange-400">{isLoadingMarket ? '相場取得中...' : `本日の銅建値: ¥${marketPrice.toLocaleString()}/t`}</div>
+                  <button onClick={() => setIsPosOpen(false)} className="bg-white/10 hover:bg-white/20 p-2 rounded transition-colors"><IconX /></button>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="hidden md:block text-xs text-orange-400">{isLoadingMarket ? '相場取得中...' : `本日の銅建値: ¥${marketPrice.toLocaleString()}/t`}</div>
-                <button onClick={() => setIsPosOpen(false)} className="bg-white/10 hover:bg-white/20 p-2 rounded transition-colors"><IconX /></button>
+              <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-4 bg-[#f8f8f8]">
+                  <div className="grid grid-cols-2 gap-3">
+                    {products.map(p => {
+                      const unit = Math.floor(marketPrice * (p.ratio/100));
+                      return (
+                        <button key={p.id} onClick={() => { setSelectedProduct(p); setCalcModalOpen(true); }} className="bg-white p-4 rounded border border-[#e0e0e0] shadow-sm hover:border-[#D32F2F] hover:shadow-md transition-all text-left group">
+                          <div className="text-xs font-bold text-[#D32F2F] mb-1">{p.name}</div>
+                          <div className="text-[10px] text-[#666666] mb-2">{p.tag}</div>
+                          <div className="flex justify-between items-end"><span className="text-lg font-black text-[#1a1a1a]">¥{unit.toLocaleString()}</span><span className="text-xs text-[#666666]">/kg</span></div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+                <div className="w-full md:w-80 bg-white border-l border-[#e0e0e0] flex flex-col shadow-xl z-10">
+                  <div className="p-4 bg-[#f8f8f8] border-b border-[#e0e0e0] font-bold text-[#1a1a1a] flex justify-between shrink-0"><span>見積りリスト</span><button onClick={() => setCart([])} className="text-xs text-red-600 hover:underline">クリア</button></div>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    {cart.length === 0 ? <div className="text-center text-[#999999] text-sm py-8">商品を選択してください</div> : cart.map((item, i) => {
+                      const cond = CONDITION_RANKS[item.condition || 'B'];
+                      return (
+                        <div key={i} className="flex justify-between text-sm border-b border-[#f0f0f0] pb-2">
+                          <div>
+                            <div className="font-bold flex items-center gap-1">
+                              {item.name}
+                              <span className={`text-[10px] px-1 rounded border ${cond.color}`}>{item.condition || 'B'}</span>
+                            </div>
+                            <div className="text-xs text-[#666666]">{item.weight}kg × @{item.unit}</div>
+                          </div>
+                          <div className="font-mono font-bold">¥{item.subtotal.toLocaleString()}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="p-6 bg-[#f8f8f8] border-t border-[#e0e0e0] shrink-0">
+                    <div className="flex justify-between items-end mb-4"><span className="font-bold text-[#666666]">合計支払額</span><span className="text-3xl font-black text-[#D32F2F]">¥{total.toLocaleString()}</span></div>
+                    {cart.length > 0 && user ? (
+                       <button onClick={completeTransaction} className="w-full bg-[#1a1a1a] text-white py-4 rounded font-bold hover:bg-black transition-colors flex justify-center gap-2 items-center">
+                         取引を確定してID発行 <IconPrinter/>
+                       </button>
+                    ) : (
+                       <div className="text-center text-xs text-[#666666]">※ID発行は会員ログインが必要です</div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-4 bg-[#f8f8f8]">
-                <div className="grid grid-cols-2 gap-3">
-                  {products.map(p => {
-                    const unit = Math.floor(marketPrice * (p.ratio/100));
+          ) : (
+            // 2. 取引完了画面 (レシート/ID表示)
+            <div className="bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+               <div className="bg-green-600 text-white p-6 text-center">
+                 <div className="text-5xl mb-2">✓</div>
+                 <h3 className="text-2xl font-bold">取引完了</h3>
+                 <p className="opacity-90">買取データが保存されました</p>
+               </div>
+               <div className="p-6">
+                 <div className="border-2 border-dashed border-gray-300 bg-gray-50 p-4 rounded mb-6 text-center">
+                   <div className="text-xs text-gray-500 mb-1">管理ID (QRコード用)</div>
+                   <div className="text-2xl font-mono font-black tracking-widest text-[#1a1a1a]">{lastTransactionId}</div>
+                   <div className="mt-2 text-xs text-gray-400">※このIDをフレコンに貼り付けてください</div>
+                 </div>
+                 
+                 <div className="space-y-2 mb-6 text-sm">
+                    <div className="flex justify-between border-b pb-2"><span>顧客名</span><span className="font-bold">{user.name} 様</span></div>
+                    <div className="flex justify-between border-b pb-2"><span>点数</span><span className="font-bold">{cart.length} 点</span></div>
+                    <div className="flex justify-between text-lg"><span>支払金額</span><span className="font-bold text-[#D32F2F]">¥{total.toLocaleString()}</span></div>
+                 </div>
+
+                 <button onClick={resetPos} className="w-full bg-gray-900 text-white py-3 rounded font-bold">新しい取引へ</button>
+               </div>
+            </div>
+          )}
+
+          {/* 計算機モーダル (状態選択付き) */}
+          {calcModalOpen && (
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center p-4 z-[60]">
+              <div className="bg-white rounded-xl shadow-2xl p-4 w-full max-w-xs animate-in zoom-in duration-200">
+                <div className="text-center mb-2"><div className="text-sm text-[#666666]">{selectedProduct?.tag}</div><div className="font-bold text-lg">{selectedProduct?.name}</div></div>
+                
+                {/* 状態ランク選択 */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {Object.keys(CONDITION_RANKS).map(key => {
+                    const c = CONDITION_RANKS[key];
+                    const isActive = currentCondition === key;
                     return (
-                      <button key={p.id} onClick={() => { setSelectedProduct(p); setCalcModalOpen(true); }} className="bg-white p-4 rounded border border-[#e0e0e0] shadow-sm hover:border-[#D32F2F] hover:shadow-md transition-all text-left">
-                        <div className="text-xs font-bold text-[#D32F2F] mb-1">{p.name}</div>
-                        <div className="text-[10px] text-[#666666] mb-2">{p.tag}</div>
-                        <div className="flex justify-between items-end"><span className="text-lg font-black text-[#1a1a1a]">¥{unit.toLocaleString()}</span><span className="text-xs text-[#666666]">/kg</span></div>
+                      <button key={key} onClick={() => setCurrentCondition(key)} className={`p-2 rounded border text-xs font-bold transition-all ${isActive ? 'bg-gray-800 text-white border-gray-800 ring-2 ring-offset-1 ring-gray-400' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                        {c.label}
+                        <div className="text-[9px] font-normal opacity-80">{c.desc.split(' ')[0]}</div>
                       </button>
                     )
                   })}
                 </div>
-              </div>
-              <div className="w-full md:w-80 bg-white border-l border-[#e0e0e0] flex flex-col shadow-xl z-10">
-                <div className="p-4 bg-[#f8f8f8] border-b border-[#e0e0e0] font-bold text-[#1a1a1a] flex justify-between shrink-0"><span>見積りリスト</span><button onClick={() => setCart([])} className="text-xs text-red-600 hover:underline">クリア</button></div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {cart.length === 0 ? <div className="text-center text-[#999999] text-sm py-8">商品を選択してください</div> : cart.map((item, i) => (
-                    <div key={i} className="flex justify-between text-sm border-b border-[#f0f0f0] pb-2"><div><div className="font-bold flex items-center gap-1">{item.name}{item.sorted && <span className="bg-green-100 text-green-700 text-[10px] px-1 rounded">良</span>}</div><div className="text-xs text-[#666666]">{item.weight}kg × @{item.unit}</div></div><div className="font-mono font-bold">¥{item.subtotal.toLocaleString()}</div></div>
-                  ))}
+
+                <div className="bg-[#f8f8f8] p-4 rounded mb-4 text-right border border-[#e0e0e0]">
+                  <span className="text-xs text-[#666666] block">重量 (kg)</span>
+                  <span className="text-3xl font-mono font-bold text-[#1a1a1a]">{calcValue}</span>
                 </div>
-                <div className="p-6 bg-[#f8f8f8] border-t border-[#e0e0e0] shrink-0">
-                  {user && user.points > 0 && <div className="mb-4 text-xs"><div className="flex justify-between items-center mb-1"><span className="font-bold text-[#666666]">保有ポイント利用</span><span>{user.points.toLocaleString()} pt</span></div><input type="number" className="w-full border p-2 rounded" placeholder="利用pt" max={user.points} value={usedPoints} onChange={(e) => setUsedPoints(Math.min(user.points, parseInt(e.target.value) || 0))}/></div>}
-                  <div className="flex justify-between items-end mb-1"><span className="font-bold text-[#666666]">合計支払額</span><span className="text-3xl font-black text-[#D32F2F]">¥{total.toLocaleString()}</span></div>
-                  {user ? <div className="text-right text-xs font-bold text-[#D32F2F] mb-4">獲得予定: {earnPoints} pt (ランク {rankInfo.current.pointRate*100}%)</div> : <div className="text-right text-xs text-[#666666] mb-4"><button onClick={() => setLoginModalOpen(true)} className="underline hover:text-[#D32F2F]">会員登録でポイントが貯まります</button></div>}
-                  <button onClick={() => window.print()} className="w-full bg-[#1a1a1a] text-white py-4 rounded font-bold hover:bg-black transition-colors flex justify-center gap-2">明細書を発行する</button>
+
+                {/* カメラボタン (ダミー) */}
+                <div className="mb-4">
+                   <button className="w-full py-2 border border-dashed border-gray-300 text-gray-500 rounded flex items-center justify-center gap-2 hover:bg-gray-50 text-sm">
+                     <IconCamera /> 荷姿を撮影 (証拠保存)
+                   </button>
                 </div>
-              </div>
-            </div>
-          </div>
-          {calcModalOpen && (
-            <div className="absolute inset-0 bg-black/20 flex items-center justify-center p-4">
-              <div className="bg-white rounded-xl shadow-2xl p-4 w-full max-w-xs animate-in zoom-in duration-200">
-                <div className="text-center mb-4"><div className="text-sm text-[#666666]">{selectedProduct?.tag}</div><div className="font-bold text-lg">{selectedProduct?.name}</div></div>
-                {user && <div className="mb-4"><label className={`flex items-center justify-between p-3 rounded border cursor-pointer transition-colors ${isSorted ? 'bg-green-50 border-green-500' : 'bg-gray-50 border-gray-200'}`}><span className="text-sm font-bold text-gray-700">分別済み・付物なし</span><input type="checkbox" checked={isSorted} onChange={(e) => setIsSorted(e.target.checked)} className="w-5 h-5 accent-green-600"/></label><div className="text-[10px] text-gray-500 mt-1 text-center">※チェックで単価アップ＆貢献度ボーナス</div></div>}
-                <div className="bg-[#f8f8f8] p-4 rounded mb-4 text-right border border-[#e0e0e0]"><span className="text-xs text-[#666666] block">重量 (kg)</span><span className="text-3xl font-mono font-bold text-[#1a1a1a]">{calcValue}</span></div>
+
                 <div className="grid grid-cols-3 gap-2 mb-4">{[7,8,9,4,5,6,1,2,3,0,'.'].map(n => <button key={n} onClick={() => handleCalcInput(n.toString())} className="bg-white border border-[#e0e0e0] rounded p-3 font-bold text-lg hover:bg-[#f0f0f0]">{n}</button>)}<button onClick={() => setCalcValue('0')} className="bg-red-50 text-red-600 border border-red-100 rounded p-3 font-bold text-sm">C</button></div>
                 <div className="flex gap-2"><button onClick={() => setCalcModalOpen(false)} className="flex-1 py-3 border border-[#e0e0e0] rounded font-bold text-[#666666]">キャンセル</button><button onClick={addToCart} className="flex-1 py-3 bg-[#D32F2F] text-white rounded font-bold shadow-lg hover:bg-[#B71C1C]">決定</button></div>
               </div>
