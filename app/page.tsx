@@ -7,7 +7,6 @@ import React, { useState, useEffect } from 'react';
 // ==========================================
 //  設定・データ定義
 // ==========================================
-// ★ GASのURL (変更があれば書き換えてください)
 const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec";
 
 // 2026年のリアルな銅建値データ
@@ -32,7 +31,7 @@ const RANKS = [
   { id: 'VIP', name: 'プラチナ', bonus: 50, color: 'text-amber-500', bg: 'bg-amber-50', icon: '👑' },
 ];
 
-// --- Icons (全アイコン定義) ---
+// --- Icons ---
 const IconChart = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>;
 const IconArrowUp = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>;
 const IconLock = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
@@ -47,6 +46,7 @@ const IconCpu = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height=
 const IconFactory = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M17 18h1"></path><path d="M12 18h1"></path><path d="M7 18h1"></path></svg>;
 const IconMapPin = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
 const IconSearch = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
+const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
 
 // --- Interactive Chart Component ---
 const RealChart = ({ data, color = "#ef4444" }) => {
@@ -193,14 +193,11 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // CRMデータ取得 (ログイン時のみ)
   useEffect(() => {
     if (user && user.rank === 'OWNER') {
         fetch(`${API_ENDPOINT}?action=get_crm_data`)
           .then(res => res.json())
-          .then(data => {
-             if(data.targets) setCrmData(data.targets);
-          })
+          .then(data => { if(data.targets) setCrmData(data.targets); })
           .catch(e => console.error(e));
     }
   }, [user]);
@@ -230,14 +227,7 @@ export default function LandingPage() {
     if(w > 0 && selectedProduct) {
       const unit = Math.floor(marketPrice * (selectedProduct.ratio/100));
       const grossProfit = Math.floor((marketPrice * 0.98 * (selectedProduct.ratio/100) - unit) * w);
-      
-      setCart([...cart, { 
-          ...selectedProduct, 
-          weight: w, 
-          unit: unit, 
-          subtotal: Math.floor(w * unit),
-          grossProfit: grossProfit 
-      }]);
+      setCart([...cart, { ...selectedProduct, weight: w, unit: unit, subtotal: Math.floor(w * unit), grossProfit: grossProfit }]);
       setCalcModalOpen(false);
       setCalcValue('0');
     }
@@ -268,10 +258,9 @@ export default function LandingPage() {
             </div>
           </div>
           <nav className="hidden lg:flex items-center gap-6 text-sm font-bold text-[#1a1a1a]">
-            <a href="#services" className="hover:text-[#D32F2F] transition-colors">事業内容</a>
+            <a href="#recycle" className="hover:text-[#D32F2F] transition-colors">リサイクル事業</a>
             <a href="#rank" className="hover:text-[#D32F2F] transition-colors">会員ランク</a>
-            <a href="#company" className="hover:text-[#D32F2F] transition-colors">会社概要</a>
-            <a href="#faq" className="hover:text-[#D32F2F] transition-colors">FAQ</a>
+            <a href="#about" className="hover:text-[#D32F2F] transition-colors">会社概要</a>
             {user ? (
               <div className="flex items-center gap-4 ml-4">
                 <div className="text-right"><div className="text-xs text-gray-500">{user.name} 様</div><button onClick={handleLogout} className="text-[10px] text-red-600 underline">ログアウト</button></div>
@@ -296,21 +285,15 @@ export default function LandingPage() {
         
         <div className="container mx-auto relative z-10 grid md:grid-cols-2 gap-12 items-center">
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
-            <div className="inline-block px-3 py-1 bg-[#D32F2F]/20 text-[#D32F2F] border border-[#D32F2F]/50 rounded-full text-xs font-bold mb-6 tracking-wider">
-              SINCE 1961
-            </div>
-            <h2 className="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-tight">
-              Re Defining <br/><span className="text-[#D32F2F]">Recycling.</span>
-            </h2>
+            <div className="inline-block px-3 py-1 bg-[#D32F2F]/20 text-[#D32F2F] border border-[#D32F2F]/50 rounded-full text-xs font-bold mb-6 tracking-wider">SINCE 1961</div>
+            <h2 className="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-tight">Re Defining <br/><span className="text-[#D32F2F]">Recycling.</span></h2>
             <p className="text-lg text-slate-400 font-medium mb-8 leading-relaxed">
               BEYOND RESOURCES. EVOLVING VALUE.<br/>
               都市に眠る資源は、磨けば光る「宝石」。<br/>
               1961年の創業以来培った技術で、リサイクルを再定義します。
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <button onClick={() => setIsPosOpen(true)} className="bg-white text-slate-900 px-8 py-4 rounded font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] transition-all flex items-center justify-center gap-2">
-                <IconCalculator /> 今すぐ査定する
-              </button>
+              <button onClick={() => setIsPosOpen(true)} className="bg-white text-slate-900 px-8 py-4 rounded font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] transition-all flex items-center justify-center gap-2"><IconCalculator /> 今すぐ査定する</button>
               <div className="flex items-center gap-2 text-slate-500 px-4"><IconLock /> 会員登録でさらに優遇</div>
             </div>
           </div>
@@ -321,41 +304,59 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Services (Manufacturing Content) */}
-      <section id="services" className="py-24 bg-white">
+      {/* Main Service (Recycling) */}
+      <section id="recycle" className="py-24 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">月寒製作所の事業</h2>
-            <p className="text-gray-500">鋳造・選別・製造。多角的な資源再生ソリューション。</p>
-            <div className="w-16 h-1 bg-[#D32F2F] mx-auto mt-4"></div>
+           <div className="flex flex-col md:flex-row items-center gap-12">
+              <div className="md:w-1/2">
+                 <div className="inline-block px-4 py-1 bg-red-100 text-[#D32F2F] font-bold rounded-full text-xs mb-6">MAIN BUSINESS</div>
+                 <h2 className="text-4xl font-black text-[#1a1a1a] mb-6 leading-tight">廃電線・非鉄金属<br/>リサイクル事業</h2>
+                 <p className="text-gray-600 text-lg leading-relaxed mb-8">
+                    当社は独自の「ナゲットプラント」を工場内に保有しています。<br/>
+                    持ち込まれた被覆銅線を粉砕・選別し、純度99.9%の銅ナゲットとして再生します。<br/>
+                    この一貫処理体制により、被覆がついたままの状態での高価買取を実現しています。
+                 </p>
+                 <ul className="space-y-4">
+                    <li className="flex items-center gap-3 font-bold text-[#1a1a1a]"><span className="text-[#D32F2F]"><IconCheck /></span> 面倒な「皮むき作業」は一切不要</li>
+                    <li className="flex items-center gap-3 font-bold text-[#1a1a1a]"><span className="text-[#D32F2F]"><IconCheck /></span> 独自の選別技術で「純度99.9%」の銅を回収</li>
+                    <li className="flex items-center gap-3 font-bold text-[#1a1a1a]"><span className="text-[#D32F2F]"><IconCheck /></span> 基板・E-Scrapからの貴金属回収も対応</li>
+                 </ul>
+              </div>
+              <div className="md:w-1/2 bg-gray-100 rounded-2xl h-80 flex items-center justify-center relative overflow-hidden group">
+                 {/* Placeholder for Factory Image */}
+                 <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300"></div>
+                 <IconFactory size={64} className="text-gray-400 relative z-10" />
+                 <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur px-4 py-2 rounded-lg text-xs font-bold text-gray-600">自社ナゲットプラント稼働中</div>
+              </div>
+           </div>
+        </div>
+      </section>
+
+      {/* Sub Services (Trust Indicators) */}
+      <section className="py-16 bg-gray-50 border-y border-gray-200">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+             <h3 className="text-xl font-bold text-gray-500">技術は、人が創る。<br/>創業以来の確かなモノづくり。</h3>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-             <div className="p-6 border border-gray-100 rounded-xl hover:shadow-lg transition-all">
-                <div className="text-[#D32F2F] mb-4"><IconZap size={32} /></div>
-                <h3 className="font-bold text-lg mb-2">廃電線リサイクル</h3>
-                <p className="text-sm text-gray-600">独自のナゲット処理技術により被覆銅線から純度99.9%の銅を回収。</p>
+          <div className="grid md:grid-cols-3 gap-8">
+             <div className="bg-white p-6 rounded-xl border border-gray-100 flex items-start gap-4">
+                <div className="text-[#D32F2F] bg-red-50 p-3 rounded-lg"><IconFactory size={24} /></div>
+                <div><h4 className="font-bold text-[#1a1a1a] mb-1">黄銅ビレット鋳造</h4><p className="text-xs text-gray-500">熟練の職人が成分を管理し、高品質な黄銅ビレットを製造。</p></div>
              </div>
-             <div className="p-6 border border-gray-100 rounded-xl hover:shadow-lg transition-all">
-                <div className="text-[#D32F2F] mb-4"><IconFactory size={32} /></div>
-                <h3 className="font-bold text-lg mb-2">黄銅ビレット鋳造</h3>
-                <p className="text-sm text-gray-600">熟練職人が成分を管理。高品質な黄銅ビレットを製造・販売。</p>
+             <div className="bg-white p-6 rounded-xl border border-gray-100 flex items-start gap-4">
+                <div className="text-[#D32F2F] bg-red-50 p-3 rounded-lg"><IconCpu size={24} /></div>
+                <div><h4 className="font-bold text-[#1a1a1a] mb-1">制御盤・分電盤</h4><p className="text-xs text-gray-500">札幌本社工場にて、設計から製造までを一貫して行います。</p></div>
              </div>
-             <div className="p-6 border border-gray-100 rounded-xl hover:shadow-lg transition-all">
-                <div className="text-[#D32F2F] mb-4"><IconCpu size={32} /></div>
-                <h3 className="font-bold text-lg mb-2">制御盤・分電盤</h3>
-                <p className="text-sm text-gray-600">札幌本社工場にて、各種盤の設計・製造を一貫して行っています。</p>
-             </div>
-             <div className="p-6 border border-gray-100 rounded-xl hover:shadow-lg transition-all">
-                <div className="text-[#D32F2F] mb-4"><IconShield size={32} /></div>
-                <h3 className="font-bold text-lg mb-2">圧縮端子製造</h3>
-                <p className="text-sm text-gray-600">マルチピラー・簡易キュービクル・圧縮端子等の部材製造。</p>
+             <div className="bg-white p-6 rounded-xl border border-gray-100 flex items-start gap-4">
+                <div className="text-[#D32F2F] bg-red-50 p-3 rounded-lg"><IconShield size={24} /></div>
+                <div><h4 className="font-bold text-[#1a1a1a] mb-1">圧縮端子製造</h4><p className="text-xs text-gray-500">マルチピラーや簡易キュービクル等の部材を自社製造。</p></div>
              </div>
           </div>
         </div>
       </section>
 
-      {/* Ranks (Restored!) */}
-      <section id="rank" className="py-24 bg-gray-50">
+      {/* Ranks (Restored) */}
+      <section id="rank" className="py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
              <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">会員ランクシステム</h2>
@@ -375,21 +376,35 @@ export default function LandingPage() {
                        {rank.bonus === 0 ? '±0' : `+${rank.bonus}`} <span className="text-sm text-gray-400 font-normal">円/kg</span>
                      </div>
                   </div>
-                  {rank.id === 'GUEST' ? (
-                     <span className="text-xs text-gray-400 font-bold mt-auto">現在のお客様</span>
-                  ) : (
-                     <div className="mt-auto text-xs font-bold text-[#D32F2F]">
-                        年間 <span className="text-lg">約{((rank.bonus * 1000 * 12)/10000).toFixed(0)}万円</span> お得
-                     </div>
-                  )}
+                  {rank.id === 'GUEST' ? <span className="text-xs text-gray-400 font-bold mt-auto">現在のお客様</span> : <div className="mt-auto text-xs font-bold text-[#D32F2F]">年間 <span className="text-lg">約{((rank.bonus * 1000 * 12)/10000).toFixed(0)}万円</span> お得</div>}
                </div>
              ))}
           </div>
         </div>
       </section>
 
-      {/* Company Info */}
-      <section id="company" className="py-20 bg-white">
+      {/* FAQ (Restored) */}
+      <section id="faq" className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">よくある質問</h2>
+          </div>
+          <div className="space-y-4">
+            {FAQ_ITEMS.map((item, idx) => (
+              <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow">
+                <button onClick={() => setActiveFaq(activeFaq === idx ? null : idx)} className="w-full flex justify-between items-center p-5 text-left font-bold hover:bg-gray-50">
+                  <span className="flex items-center gap-3"><span className="text-[#D32F2F]">Q.</span> {item.q}</span>
+                  <IconChevronDown className={`transform transition-transform ${activeFaq === idx ? 'rotate-180' : ''}`} />
+                </button>
+                {activeFaq === idx && <div className="p-5 bg-gray-50 text-sm text-gray-600 border-t border-gray-100 leading-relaxed"><span className="font-bold text-[#1a1a1a] mr-2">A.</span> {item.a}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Company Info (Moved to bottom) */}
+      <section id="about" className="py-20 bg-white">
         <div className="container mx-auto px-4 max-w-4xl">
            <div className="bg-gray-50 rounded-2xl shadow-sm overflow-hidden flex flex-col md:flex-row border border-gray-100">
               <div className="bg-[#1a1a1a] text-white p-12 md:w-1/3 flex flex-col justify-center">
@@ -407,30 +422,6 @@ export default function LandingPage() {
                  </div>
               </div>
            </div>
-        </div>
-      </section>
-
-      {/* FAQ (Restored!) */}
-      <section id="faq" className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">よくある質問</h2>
-          </div>
-          <div className="space-y-4">
-            {FAQ_ITEMS.map((item, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow">
-                <button onClick={() => setActiveFaq(activeFaq === idx ? null : idx)} className="w-full flex justify-between items-center p-5 text-left font-bold hover:bg-gray-50">
-                  <span className="flex items-center gap-3"><span className="text-[#D32F2F]">Q.</span> {item.q}</span>
-                  <IconChevronDown className={`transform transition-transform ${activeFaq === idx ? 'rotate-180' : ''}`} />
-                </button>
-                {activeFaq === idx && (
-                  <div className="p-5 bg-gray-50 text-sm text-gray-600 border-t border-gray-100 leading-relaxed">
-                    <span className="font-bold text-[#1a1a1a] mr-2">A.</span> {item.a}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -459,25 +450,14 @@ export default function LandingPage() {
               </div>
               <div className="flex-1 overflow-y-auto p-0">
                  <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-50 text-gray-500 font-bold sticky top-0">
-                       <tr>
-                          <th className="p-4">企業名</th>
-                          <th className="p-4">住所</th>
-                          <th className="p-4">ランク</th>
-                          <th className="p-4">アクション</th>
-                       </tr>
-                    </thead>
+                    <thead className="bg-gray-50 text-gray-500 font-bold sticky top-0"><tr><th className="p-4">企業名</th><th className="p-4">住所</th><th className="p-4">ランク</th><th className="p-4">アクション</th></tr></thead>
                     <tbody className="divide-y">
                        {crmData.filter(t => t.name.includes(searchTerm) || t.address.includes(searchTerm)).map(target => (
                           <tr key={target.id} className="hover:bg-gray-50">
                              <td className="p-4 font-bold">{target.name}</td>
                              <td className="p-4 text-gray-500">{target.address}</td>
                              <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold ${target.priority === 'S' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>{target.priority}</span></td>
-                             <td className="p-4">
-                                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.name + " " + target.address)}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
-                                   <IconMapPin size={14} /> マップを開く
-                                </a>
-                             </td>
+                             <td className="p-4"><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.name + " " + target.address)}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1"><IconMapPin size={14} /> マップを開く</a></td>
                           </tr>
                        ))}
                     </tbody>
@@ -531,22 +511,13 @@ export default function LandingPage() {
                        ))
                      )}
                    </div>
-                   
-                   {/* Smart Labor (Admin Only) */}
                    {user && cart.length > 0 && (
                      <div className="bg-blue-50 p-4 border-t border-blue-100 animate-in slide-in-from-bottom-4">
                         <div className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1"><IconZap size={14} /> Smart Labor (Profit Simulation)</div>
-                        <div className="flex justify-between items-center mb-1">
-                           <span className="text-xs text-gray-500">予想粗利:</span>
-                           <span className="font-bold text-blue-700">¥{totalProfit.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                           <span className="text-xs text-gray-500">時給換算 (20kg/h):</span>
-                           <span className="font-bold text-green-600">¥{hourlyWage.toLocaleString()}/h</span>
-                        </div>
+                        <div className="flex justify-between items-center mb-1"><span className="text-xs text-gray-500">予想粗利:</span><span className="font-bold text-blue-700">¥{totalProfit.toLocaleString()}</span></div>
+                        <div className="flex justify-between items-center"><span className="text-xs text-gray-500">時給換算 (20kg/h):</span><span className="font-bold text-green-600">¥{hourlyWage.toLocaleString()}/h</span></div>
                      </div>
                    )}
-
                    <div className="p-6 bg-[#1a1a1a] text-white shrink-0">
                       <div className="flex justify-between items-end mb-6"><span className="text-sm text-gray-400">お支払い予定額</span><span className="text-4xl font-black tracking-tight">¥{subTotal.toLocaleString()}</span></div>
                       {!user ? (<button onClick={() => alert("初回ID発行フローへ")} className="w-full bg-[#D32F2F] hover:bg-[#B71C1C] text-white py-4 rounded-xl font-bold shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2">買取申込 & ID発行</button>) : (<button onClick={() => alert("送信完了")} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold shadow-lg">取引確定 (会員)</button>)}
