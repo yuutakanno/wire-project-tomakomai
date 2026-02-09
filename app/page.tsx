@@ -32,7 +32,7 @@ const RANKS = [
   { id: 'VIP', name: 'プラチナ', bonus: 50, color: 'text-amber-500', bg: 'bg-amber-50', icon: '👑' },
 ];
 
-// --- Icons (全アイコン定義・完全版) ---
+// --- Icons (全アイコン定義) ---
 const IconChart = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>;
 const IconArrowUp = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>;
 const IconLock = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
@@ -44,7 +44,6 @@ const IconTruck = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" heigh
 const IconZap = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
 const IconShield = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>;
 const IconCpu = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>;
-// ★前回不足していたアイコンを定義
 const IconFactory = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M17 18h1"></path><path d="M12 18h1"></path><path d="M7 18h1"></path></svg>;
 const IconMapPin = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
 const IconSearch = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
@@ -194,7 +193,7 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // ★ CRMデータ取得 (ログイン時のみ)
+  // CRMデータ取得 (ログイン時のみ)
   useEffect(() => {
     if (user && user.rank === 'OWNER') {
         fetch(`${API_ENDPOINT}?action=get_crm_data`)
@@ -229,9 +228,7 @@ export default function LandingPage() {
   const addToCart = () => {
     const w = parseFloat(calcValue);
     if(w > 0 && selectedProduct) {
-      // 買取単価計算
       const unit = Math.floor(marketPrice * (selectedProduct.ratio/100));
-      // 粗利計算 (Smart Labor) - 98%回収と仮定
       const grossProfit = Math.floor((marketPrice * 0.98 * (selectedProduct.ratio/100) - unit) * w);
       
       setCart([...cart, { 
@@ -253,7 +250,6 @@ export default function LandingPage() {
 
   const subTotal = cart.reduce((a,b) => a + b.subtotal, 0);
   const totalProfit = cart.reduce((a,b) => a + (b.grossProfit || 0), 0);
-  // ★時給計算 (仮: 20kg/h 処理と仮定)
   const totalWeight = cart.reduce((a,b) => a + b.weight, 0);
   const estimatedHours = totalWeight / 20; 
   const hourlyWage = estimatedHours > 0 ? Math.floor(totalProfit / estimatedHours) : 0;
@@ -273,7 +269,9 @@ export default function LandingPage() {
           </div>
           <nav className="hidden lg:flex items-center gap-6 text-sm font-bold text-[#1a1a1a]">
             <a href="#services" className="hover:text-[#D32F2F] transition-colors">事業内容</a>
+            <a href="#rank" className="hover:text-[#D32F2F] transition-colors">会員ランク</a>
             <a href="#company" className="hover:text-[#D32F2F] transition-colors">会社概要</a>
+            <a href="#faq" className="hover:text-[#D32F2F] transition-colors">FAQ</a>
             {user ? (
               <div className="flex items-center gap-4 ml-4">
                 <div className="text-right"><div className="text-xs text-gray-500">{user.name} 様</div><button onClick={handleLogout} className="text-[10px] text-red-600 underline">ログアウト</button></div>
@@ -323,7 +321,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Manufacturing Content (New!) */}
+      {/* Services (Manufacturing Content) */}
       <section id="services" className="py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -356,10 +354,44 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Ranks (Restored!) */}
+      <section id="rank" className="py-24 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+             <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">会員ランクシステム</h2>
+             <p className="text-gray-500">初回取引完了後に発行されるIDで、<br/>2回目以降の取引が圧倒的にお得になります。</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+             {RANKS.map((rank) => (
+               <div key={rank.id} className={`relative p-8 rounded-2xl border-2 ${rank.id === 'VIP' ? 'border-amber-400 shadow-xl scale-105 z-10' : 'border-gray-100 shadow-sm'} bg-white flex flex-col items-center text-center transition-all hover:-translate-y-2`}>
+                  {rank.id === 'VIP' && <div className="absolute -top-4 bg-amber-500 text-white px-4 py-1 rounded-full text-xs font-bold tracking-widest">MOST POPULAR</div>}
+                  <div className={`w-16 h-16 rounded-full ${rank.bg} flex items-center justify-center text-3xl mb-6 shadow-inner`}>
+                     {rank.icon}
+                  </div>
+                  <h3 className="text-xl font-black text-[#1a1a1a] mb-2">{rank.name}</h3>
+                  <div className="w-full bg-gray-50 rounded-xl p-4 mb-4">
+                     <div className="text-xs text-gray-400 font-bold uppercase mb-1">買取単価ボーナス</div>
+                     <div className={`text-3xl font-black ${rank.color}`}>
+                       {rank.bonus === 0 ? '±0' : `+${rank.bonus}`} <span className="text-sm text-gray-400 font-normal">円/kg</span>
+                     </div>
+                  </div>
+                  {rank.id === 'GUEST' ? (
+                     <span className="text-xs text-gray-400 font-bold mt-auto">現在のお客様</span>
+                  ) : (
+                     <div className="mt-auto text-xs font-bold text-[#D32F2F]">
+                        年間 <span className="text-lg">約{((rank.bonus * 1000 * 12)/10000).toFixed(0)}万円</span> お得
+                     </div>
+                  )}
+               </div>
+             ))}
+          </div>
+        </div>
+      </section>
+
       {/* Company Info */}
-      <section id="company" className="py-20 bg-gray-50">
+      <section id="company" className="py-20 bg-white">
         <div className="container mx-auto px-4 max-w-4xl">
-           <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col md:flex-row">
+           <div className="bg-gray-50 rounded-2xl shadow-sm overflow-hidden flex flex-col md:flex-row border border-gray-100">
               <div className="bg-[#1a1a1a] text-white p-12 md:w-1/3 flex flex-col justify-center">
                  <h2 className="text-2xl font-black mb-4">拠点紹介</h2>
                  <p className="text-gray-400 text-sm">OUR LOCATIONS</p>
@@ -375,6 +407,30 @@ export default function LandingPage() {
                  </div>
               </div>
            </div>
+        </div>
+      </section>
+
+      {/* FAQ (Restored!) */}
+      <section id="faq" className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">よくある質問</h2>
+          </div>
+          <div className="space-y-4">
+            {FAQ_ITEMS.map((item, idx) => (
+              <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow">
+                <button onClick={() => setActiveFaq(activeFaq === idx ? null : idx)} className="w-full flex justify-between items-center p-5 text-left font-bold hover:bg-gray-50">
+                  <span className="flex items-center gap-3"><span className="text-[#D32F2F]">Q.</span> {item.q}</span>
+                  <IconChevronDown className={`transform transition-transform ${activeFaq === idx ? 'rotate-180' : ''}`} />
+                </button>
+                {activeFaq === idx && (
+                  <div className="p-5 bg-gray-50 text-sm text-gray-600 border-t border-gray-100 leading-relaxed">
+                    <span className="font-bold text-[#1a1a1a] mr-2">A.</span> {item.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
