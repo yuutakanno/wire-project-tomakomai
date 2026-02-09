@@ -17,6 +17,7 @@ const IconHome = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height
 const IconUsers = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>;
 const IconFileText = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>;
 const IconPrinter = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>;
+const IconLock = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
 
 // --- Components ---
 const CircleChart = ({ percent, label, subLabel, color }) => {
@@ -38,33 +39,36 @@ const CircleChart = ({ percent, label, subLabel, color }) => {
 };
 
 export default function FactoryDashboard() {
+  const [isAdmin, setIsAdmin] = useState(false); // 管理者ログイン状態
+  const [authId, setAuthId] = useState('');
+  const [authPw, setAuthPw] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [dashboard, setDashboard] = useState({ 
     target:30000, current:0, progress:0, remainingDays:0, dailyQuota:0, 
     clientStats: { total: 0, newThisMonth: 0 } 
   });
   const [jobs, setJobs] = useState([]);
-  
-  // 作業中
   const [activeJob, setActiveJob] = useState(null); 
   const [elapsed, setElapsed] = useState(0);
   const [finishModalOpen, setFinishModalOpen] = useState(false);
   const [resultCopper, setResultCopper] = useState('');
-  
-  // 便利機能の演出用
   const [processingAction, setProcessingAction] = useState(null);
-
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('tsukisamu_user');
-    if (!stored) {
-      window.location.href = '/'; 
-      return;
+    // セッションチェック（リロードしてもログイン維持）
+    const session = sessionStorage.getItem('factory_admin_session');
+    if (session) {
+      const userData = JSON.parse(session);
+      setUser(userData);
+      setIsAdmin(true);
+      fetchData();
     }
-    setUser(JSON.parse(stored));
-    fetchData();
-    
+  }, []);
+
+  useEffect(() => {
     const timer = setInterval(() => {
       if(activeJob) {
         setElapsed(Math.floor((new Date() - activeJob.startTime) / 1000));
@@ -72,6 +76,40 @@ export default function FactoryDashboard() {
     }, 1000);
     return () => clearInterval(timer);
   }, [activeJob]);
+
+  // ★管理者ログイン処理
+  const handleAdminLogin = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    try {
+      const res = await fetch(`${API_ENDPOINT}?action=login&id=${authId}&pw=${authPw}`);
+      const data = await res.json();
+      
+      if (data.success && data.user) {
+        // 管理者権限チェック (ADMIN か IDが admin)
+        if (data.user.rank === 'ADMIN' || data.user.id === 'admin') {
+          setUser(data.user);
+          setIsAdmin(true);
+          sessionStorage.setItem('factory_admin_session', JSON.stringify(data.user)); // セッション保存
+          fetchData(); // データ取得開始
+        } else {
+          alert("このアカウントには管理者権限がありません。");
+        }
+      } else {
+        alert("IDまたはパスワードが違います。");
+      }
+    } catch (err) {
+      alert("ログインエラー");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('factory_admin_session');
+    setIsAdmin(false);
+    setUser(null);
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -123,7 +161,6 @@ export default function FactoryDashboard() {
     }
   };
 
-  // 便利機能ボタンのモックアクション
   const handleAdminAction = (actionName) => {
     setProcessingAction(actionName);
     setTimeout(() => {
@@ -138,8 +175,60 @@ export default function FactoryDashboard() {
     return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   };
 
-  if(!user) return <div className="p-10 text-center text-white">SYSTEM BOOTING...</div>;
+  // ==========================================
+  //  Gatekeeper View (ログイン画面)
+  // ==========================================
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] text-white flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-[#1e293b] p-8 rounded-3xl border border-slate-700 shadow-2xl">
+          <div className="text-center mb-8">
+            <div className="inline-block p-4 bg-slate-800 rounded-2xl mb-4 border border-slate-700">
+               <IconLock />
+            </div>
+            <h1 className="text-2xl font-black tracking-widest text-white">FACTORY <span className="text-red-600">GATE</span></h1>
+            <p className="text-xs text-slate-500 mt-2 uppercase tracking-wide">Authorized Personnel Only</p>
+          </div>
+          <form onSubmit={handleAdminLogin} className="space-y-4">
+            <div>
+               <label className="text-xs font-bold text-slate-400 ml-1">ADMIN ID</label>
+               <input 
+                 type="text" 
+                 value={authId} 
+                 onChange={e=>setAuthId(e.target.value)}
+                 className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:border-red-500 outline-none transition-colors" 
+                 placeholder="Enter ID"
+               />
+            </div>
+            <div>
+               <label className="text-xs font-bold text-slate-400 ml-1">PASSWORD</label>
+               <input 
+                 type="password" 
+                 value={authPw} 
+                 onChange={e=>setAuthPw(e.target.value)}
+                 className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:border-red-500 outline-none transition-colors" 
+                 placeholder="Enter Password"
+               />
+            </div>
+            <button 
+              type="submit" 
+              disabled={authLoading}
+              className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-red-900/30 flex justify-center"
+            >
+              {authLoading ? 'VERIFYING...' : 'UNLOCK SYSTEM'}
+            </button>
+          </form>
+          <div className="mt-8 text-center">
+            <a href="/" className="text-xs text-slate-500 hover:text-white transition-colors border-b border-transparent hover:border-slate-500 pb-0.5">Back to Customer Site</a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  // ==========================================
+  //  Dashboard View (管理画面)
+  // ==========================================
   return (
     <div className="min-h-screen bg-[#0f172a] text-white font-sans selection:bg-cyan-500 selection:text-white">
       {/* Header */}
@@ -150,25 +239,23 @@ export default function FactoryDashboard() {
            </div>
            <div>
              <h1 className="text-xl font-black tracking-widest text-white leading-none">FACTORY <span className="text-red-500">OS</span></h1>
-             <span className="text-[10px] text-slate-400 font-mono tracking-wider">VER 2.0.1</span>
+             <span className="text-[10px] text-slate-400 font-mono tracking-wider">VER 2.0.3 [SECURE]</span>
            </div>
         </div>
         <div className="flex gap-4 items-center">
            <div className="hidden md:block text-right">
-             <div className="text-xs text-slate-400">OPERATOR</div>
+             <div className="text-xs text-slate-400">ADMINISTRATOR</div>
              <div className="font-bold text-sm text-cyan-400">{user.name}</div>
            </div>
            <button onClick={fetchData} disabled={loading} className="p-2 bg-slate-800 hover:bg-slate-700 rounded-full transition-all border border-slate-700"><IconRefresh /></button>
-           <a href="/" className="p-2 bg-slate-800 hover:bg-slate-700 rounded-full transition-all border border-slate-700 text-slate-400"><IconHome /></a>
+           <button onClick={handleLogout} className="text-xs bg-red-900/30 text-red-400 border border-red-900/50 px-3 py-2 rounded-lg hover:bg-red-900/50 transition-colors">LOGOUT</button>
         </div>
       </header>
 
       <div className="container mx-auto p-4 md:p-8 space-y-8">
         
-        {/* 1. Dashboard Top (Metrics) */}
+        {/* 1. Dashboard Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-           
-           {/* Main Progress Circle */}
            <div className="md:col-span-1 lg:col-span-1 bg-[#1e293b] p-6 rounded-2xl border border-slate-700 shadow-xl flex flex-col items-center justify-center relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-blue-500"></div>
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 w-full text-center">Monthly Target</h3>
@@ -179,9 +266,7 @@ export default function FactoryDashboard() {
               </div>
            </div>
 
-           {/* Stats Cards */}
            <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {/* Today's Quota */}
               <div className="bg-[#1e293b] p-6 rounded-2xl border border-slate-700 shadow-xl flex flex-col justify-between group hover:border-orange-500/50 transition-colors">
                  <div>
                    <div className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-1">Today's Mission</div>
@@ -193,7 +278,6 @@ export default function FactoryDashboard() {
                  <div className="text-xs text-slate-500 mt-2 text-right">残り営業日: {dashboard.remainingDays}日</div>
               </div>
 
-              {/* Clients Info */}
               <div className="bg-[#1e293b] p-6 rounded-2xl border border-slate-700 shadow-xl flex flex-col justify-between group hover:border-blue-500/50 transition-colors">
                  <div className="flex justify-between items-start">
                    <div className="text-xs font-bold text-blue-400 uppercase tracking-widest">Members</div>
@@ -205,7 +289,6 @@ export default function FactoryDashboard() {
                  </div>
               </div>
 
-              {/* Admin Tools (Quick Actions) */}
               <div className="bg-[#1e293b] p-6 rounded-2xl border border-slate-700 shadow-xl flex flex-col gap-3">
                  <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Quick Actions</div>
                  <button onClick={() => handleAdminAction("請求書一括発行")} disabled={!!processingAction} className="flex items-center gap-3 bg-slate-800 hover:bg-slate-700 p-3 rounded-lg transition-colors text-sm font-bold text-left border border-slate-700">
@@ -246,7 +329,7 @@ export default function FactoryDashboard() {
           </div>
         )}
 
-        {/* 3. Job List (Queue) */}
+        {/* 3. Job List */}
         {!activeJob && (
           <div className="bg-[#1e293b] rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
              <div className="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
@@ -292,7 +375,6 @@ export default function FactoryDashboard() {
         )}
       </div>
 
-      {/* Finish Modal */}
       {finishModalOpen && (
          <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
             <div className="bg-[#1e293b] border border-slate-600 w-full max-w-lg rounded-3xl p-8 shadow-2xl relative">
