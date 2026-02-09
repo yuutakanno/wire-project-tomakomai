@@ -7,9 +7,10 @@ import React, { useState, useEffect } from 'react';
 // ==========================================
 //  設定・データ定義
 // ==========================================
+// ★ デプロイした新しいGASのURLに書き換えてください（変わっていない場合はそのままでOK）
 const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec";
 
-// 2026年のリアルな銅建値データ (日足ベース)
+// 2026年のリアルな銅建値データ
 const REAL_HISTORY_2026 = [
   { date: '1/4', value: 2050 }, { date: '1/6', value: 2150 },
   { date: '1/8', value: 2110 }, { date: '1/13', value: 2190 },
@@ -31,7 +32,7 @@ const RANKS = [
   { id: 'VIP', name: 'プラチナ', bonus: 50, color: 'text-amber-500', bg: 'bg-amber-50', icon: '👑' },
 ];
 
-// --- Icons (ここに追加しました！) ---
+// --- Icons ---
 const IconChart = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>;
 const IconArrowUp = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>;
 const IconLock = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
@@ -42,8 +43,10 @@ const IconChevronDown = ({className}) => <svg xmlns="http://www.w3.org/2000/svg"
 const IconTruck = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
 const IconZap = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
 const IconShield = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>;
-// ★これを追加しました
 const IconCpu = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>;
+const IconFactory = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M17 18h1"></path><path d="M12 18h1"></path><path d="M7 18h1"></path></svg>;
+const IconMapPin = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
+const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
 
 // --- Interactive Chart Component ---
 const RealChart = ({ data, color = "#ef4444" }) => {
@@ -63,7 +66,6 @@ const RealChart = ({ data, color = "#ef4444" }) => {
 
   const getX = (index) => (index / (data.length - 1)) * width;
   const getY = (value) => height - ((value - yMin) / yRange) * height;
-
   const points = data.map((d, i) => `${getX(i)},${getY(d.value)}`).join(' ');
 
   return (
@@ -101,15 +103,7 @@ const RealChart = ({ data, color = "#ef4444" }) => {
             <path d={`M${points}`} fill="none" stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
             {data.map((d, i) => (
               <g key={i}>
-                <rect 
-                  x={getX(i) - (width/data.length)/2} 
-                  y="0" 
-                  width={width/data.length} 
-                  height="100" 
-                  fill="transparent" 
-                  onMouseEnter={() => setActivePoint(d)}
-                  onTouchStart={() => setActivePoint(d)}
-                />
+                <rect x={getX(i) - (width/data.length)/2} y="0" width={width/data.length} height="100" fill="transparent" onMouseEnter={() => setActivePoint(d)} onTouchStart={() => setActivePoint(d)} />
                 {activePoint && activePoint.date === d.date && (
                    <g>
                      <line x1={getX(i)} y1="0" x2={getX(i)} y2="100" stroke="white" strokeWidth="0.5" strokeDasharray="2" vectorEffect="non-scaling-stroke" />
@@ -119,13 +113,6 @@ const RealChart = ({ data, color = "#ef4444" }) => {
               </g>
             ))}
           </svg>
-          <div className="absolute top-0 right-1 text-[9px] text-slate-500">¥{Math.floor(yMax).toLocaleString()}</div>
-          <div className="absolute bottom-0 right-1 text-[9px] text-slate-500">¥{Math.floor(yMin).toLocaleString()}</div>
-       </div>
-       <div className="flex justify-between text-[9px] text-slate-500 px-1 mt-1 font-mono">
-          <span>{data[0].date}</span>
-          <span>{data[Math.floor(data.length/2)].date}</span>
-          <span>{data[data.length-1].date}</span>
        </div>
     </div>
   );
@@ -134,20 +121,29 @@ const RealChart = ({ data, color = "#ef4444" }) => {
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // System Data
   const [marketPrice, setMarketPrice] = useState(0); 
   const [chartData, setChartData] = useState([]); 
   const [products, setProducts] = useState([]);
+  const [crmData, setCrmData] = useState([]);
+  
+  // User Data
   const [user, setUser] = useState(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [loginId, setLoginId] = useState('');
   const [loginPw, setLoginPw] = useState('');
+  
+  // UI State
   const [isPosOpen, setIsPosOpen] = useState(false);
+  const [isCrmOpen, setIsCrmOpen] = useState(false); // ★CRM Modal
   const [cart, setCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [calcValue, setCalcValue] = useState('0');
   const [calcModalOpen, setCalcModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('loading');
   const [activeFaq, setActiveFaq] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -197,6 +193,18 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // ★ CRMデータ取得 (ログイン時のみ)
+  useEffect(() => {
+    if (user && user.rank === 'OWNER') {
+        fetch(`${API_ENDPOINT}?action=get_crm_data`)
+          .then(res => res.json())
+          .then(data => {
+             if(data.targets) setCrmData(data.targets);
+          })
+          .catch(e => console.error(e));
+    }
+  }, [user]);
+
   const handleLogin = async () => {
     try {
       const res = await fetch(`${API_ENDPOINT}?action=login&id=${loginId}&pw=${loginPw}`);
@@ -220,8 +228,18 @@ export default function LandingPage() {
   const addToCart = () => {
     const w = parseFloat(calcValue);
     if(w > 0 && selectedProduct) {
-      const baseUnit = Math.floor(marketPrice * (selectedProduct.ratio/100));
-      setCart([...cart, { ...selectedProduct, weight: w, unit: baseUnit, subtotal: Math.floor(w * baseUnit) }]);
+      // 買取単価計算
+      const unit = Math.floor(marketPrice * (selectedProduct.ratio/100));
+      // 粗利計算 (Smart Labor) - 98%回収と仮定
+      const grossProfit = Math.floor((marketPrice * 0.98 * (selectedProduct.ratio/100) - unit) * w);
+      
+      setCart([...cart, { 
+          ...selectedProduct, 
+          weight: w, 
+          unit: unit, 
+          subtotal: Math.floor(w * unit),
+          grossProfit: grossProfit // ★粗利データ保持
+      }]);
       setCalcModalOpen(false);
       setCalcValue('0');
     }
@@ -233,6 +251,12 @@ export default function LandingPage() {
   };
 
   const subTotal = cart.reduce((a,b) => a + b.subtotal, 0);
+  const totalProfit = cart.reduce((a,b) => a + (b.grossProfit || 0), 0);
+  // ★時給計算 (仮: 20kg/h 処理と仮定)
+  const totalWeight = cart.reduce((a,b) => a + b.weight, 0);
+  const estimatedHours = totalWeight / 20; 
+  const hourlyWage = estimatedHours > 0 ? Math.floor(totalProfit / estimatedHours) : 0;
+
   const categories = Array.from(new Set(products.map(p => p.category))).sort();
 
   return (
@@ -248,11 +272,11 @@ export default function LandingPage() {
           </div>
           <nav className="hidden lg:flex items-center gap-6 text-sm font-bold text-[#1a1a1a]">
             <a href="#services" className="hover:text-[#D32F2F] transition-colors">事業内容</a>
-            <a href="#rank" className="hover:text-[#D32F2F] transition-colors">会員ランク</a>
-            <a href="#faq" className="hover:text-[#D32F2F] transition-colors">FAQ</a>
+            <a href="#company" className="hover:text-[#D32F2F] transition-colors">会社概要</a>
             {user ? (
               <div className="flex items-center gap-4 ml-4">
                 <div className="text-right"><div className="text-xs text-gray-500">{user.name} 様</div><button onClick={handleLogout} className="text-[10px] text-red-600 underline">ログアウト</button></div>
+                <button onClick={() => setIsCrmOpen(true)} className="text-sm font-bold text-gray-600 hover:text-black flex items-center gap-1"><IconMapPin /> 営業リスト</button>
                 <button onClick={() => setIsPosOpen(true)} className="bg-[#1a1a1a] text-white px-5 py-2.5 rounded hover:bg-black transition-all flex items-center gap-2 shadow-lg"><IconCalculator /> 会員POS</button>
               </div>
             ) : (
@@ -288,138 +312,123 @@ export default function LandingPage() {
               <button onClick={() => setIsPosOpen(true)} className="bg-white text-slate-900 px-8 py-4 rounded font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] transition-all flex items-center justify-center gap-2">
                 <IconCalculator /> 今すぐ査定する
               </button>
-              <div className="flex items-center gap-2 text-slate-500 px-4">
-                <IconLock /> 会員登録でさらに優遇
-              </div>
+              <div className="flex items-center gap-2 text-slate-500 px-4"><IconLock /> 会員登録でさらに優遇</div>
             </div>
           </div>
-
-          {/* Interactive Chart Card */}
           <div className="bg-[#1e293b] border border-slate-700 rounded-2xl p-6 shadow-2xl animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
              <RealChart data={chartData} color="#ef4444" />
-             <div className="mt-4 pt-4 border-t border-slate-700 text-xs text-slate-500 flex justify-between">
-                <span>Source: JX Nippon Mining & Metals</span>
-                <span>Update: Auto (Daily)</span>
+             <div className="mt-4 pt-4 border-t border-slate-700 text-xs text-slate-500 flex justify-between"><span>Source: JX Nippon Mining & Metals</span><span>Update: Auto (Daily)</span></div>
+          </div>
+        </div>
+      </section>
+
+      {/* Manufacturing Content (New!) */}
+      <section id="services" className="py-24 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">月寒製作所の事業</h2>
+            <p className="text-gray-500">鋳造・選別・製造。多角的な資源再生ソリューション。</p>
+            <div className="w-16 h-1 bg-[#D32F2F] mx-auto mt-4"></div>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+             <div className="p-6 border border-gray-100 rounded-xl hover:shadow-lg transition-all">
+                <div className="text-[#D32F2F] mb-4"><IconZap size={32} /></div>
+                <h3 className="font-bold text-lg mb-2">廃電線リサイクル</h3>
+                <p className="text-sm text-gray-600">独自のナゲット処理技術により被覆銅線から純度99.9%の銅を回収。</p>
+             </div>
+             <div className="p-6 border border-gray-100 rounded-xl hover:shadow-lg transition-all">
+                <div className="text-[#D32F2F] mb-4"><IconFactory size={32} /></div>
+                <h3 className="font-bold text-lg mb-2">黄銅ビレット鋳造</h3>
+                <p className="text-sm text-gray-600">熟練職人が成分を管理。高品質な黄銅ビレットを製造・販売。</p>
+             </div>
+             <div className="p-6 border border-gray-100 rounded-xl hover:shadow-lg transition-all">
+                <div className="text-[#D32F2F] mb-4"><IconCpu size={32} /></div>
+                <h3 className="font-bold text-lg mb-2">制御盤・分電盤</h3>
+                <p className="text-sm text-gray-600">札幌本社工場にて、各種盤の設計・製造を一貫して行っています。</p>
+             </div>
+             <div className="p-6 border border-gray-100 rounded-xl hover:shadow-lg transition-all">
+                <div className="text-[#D32F2F] mb-4"><IconShield size={32} /></div>
+                <h3 className="font-bold text-lg mb-2">圧縮端子製造</h3>
+                <p className="text-sm text-gray-600">マルチピラー・簡易キュービクル・圧縮端子等の部材製造。</p>
              </div>
           </div>
         </div>
       </section>
 
-      {/* Services (Based on Brochure) */}
-      <section id="services" className="py-24 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">月寒製作所の強み</h2>
-            <p className="text-gray-500">技術は、人が創る。半世紀以上にわたる信頼と実績。</p>
-            <div className="w-16 h-1 bg-[#D32F2F] mx-auto mt-4"></div>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-lg transition-shadow">
-              <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-[#D32F2F]"><IconZap /></div>
-              <h3 className="text-xl font-bold mb-4">廃電線リサイクル</h3>
-              <p className="text-gray-600 leading-relaxed text-sm">独自のナゲット処理技術により、被覆銅線から純度99.9%の銅を回収。効率と環境配慮を両立したリサイクルプロセスを実現しています。</p>
-            </div>
-            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-lg transition-shadow">
-              <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-[#D32F2F]"><IconCpu /></div>
-              <h3 className="text-xl font-bold mb-4">E-Scrap・基板</h3>
-              <p className="text-gray-600 leading-relaxed text-sm">基板、IC、コネクタ等の都市鉱山から、金・銀・パラジウムなどの希少金属を高度な選別技術で回収。資源価値を最大化します。</p>
-            </div>
-            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-lg transition-shadow">
-              <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-[#D32F2F]"><IconShield /></div>
-              <h3 className="text-xl font-bold mb-4">熟練の目利き</h3>
-              <p className="text-gray-600 leading-relaxed text-sm">1961年の創業以来培ってきた技術。多種多様な非鉄スクラップを、人の手と知識で正確に選別し、価値を高めます。</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Ranks */}
-      <section id="rank" className="py-24 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-             <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">会員ランクシステム</h2>
-             <p className="text-gray-500">初回取引完了後に発行されるIDで、<br/>2回目以降の取引が圧倒的にお得になります。</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-             {RANKS.map((rank) => (
-               <div key={rank.id} className={`relative p-8 rounded-2xl border-2 ${rank.id === 'VIP' ? 'border-amber-400 shadow-xl scale-105 z-10' : 'border-gray-100 shadow-sm'} bg-white flex flex-col items-center text-center transition-all hover:-translate-y-2`}>
-                  {rank.id === 'VIP' && <div className="absolute -top-4 bg-amber-500 text-white px-4 py-1 rounded-full text-xs font-bold tracking-widest">MOST POPULAR</div>}
-                  <div className={`w-16 h-16 rounded-full ${rank.bg} flex items-center justify-center text-3xl mb-6 shadow-inner`}>
-                     {rank.icon}
-                  </div>
-                  <h3 className="text-xl font-black text-[#1a1a1a] mb-2">{rank.name}</h3>
-                  <div className="w-full bg-gray-50 rounded-xl p-4 mb-4">
-                     <div className="text-xs text-gray-400 font-bold uppercase mb-1">買取単価ボーナス</div>
-                     <div className={`text-3xl font-black ${rank.color}`}>
-                       {rank.bonus === 0 ? '±0' : `+${rank.bonus}`} <span className="text-sm text-gray-400 font-normal">円/kg</span>
-                     </div>
-                  </div>
-                  {rank.id === 'GUEST' ? (
-                     <span className="text-xs text-gray-400 font-bold mt-auto">現在のお客様</span>
-                  ) : (
-                     <div className="mt-auto text-xs font-bold text-[#D32F2F]">
-                        年間 <span className="text-lg">約{((rank.bonus * 1000 * 12)/10000).toFixed(0)}万円</span> お得
-                     </div>
-                  )}
-               </div>
-             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">よくある質問</h2>
-          </div>
-          <div className="space-y-4">
-            {FAQ_ITEMS.map((item, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-                <button onClick={() => setActiveFaq(activeFaq === idx ? null : idx)} className="w-full flex justify-between items-center p-5 text-left font-bold hover:bg-gray-50">
-                  <span className="flex items-center gap-3"><span className="text-[#D32F2F]">Q.</span> {item.q}</span>
-                  <IconChevronDown className={`transform transition-transform ${activeFaq === idx ? 'rotate-180' : ''}`} />
-                </button>
-                {activeFaq === idx && (
-                  <div className="p-5 bg-gray-50 text-sm text-gray-600 border-t border-gray-100 leading-relaxed">
-                    <span className="font-bold text-[#1a1a1a] mr-2">A.</span> {item.a}
-                  </div>
-                )}
+      {/* Company Info */}
+      <section id="company" className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4 max-w-4xl">
+           <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col md:flex-row">
+              <div className="bg-[#1a1a1a] text-white p-12 md:w-1/3 flex flex-col justify-center">
+                 <h2 className="text-2xl font-black mb-4">拠点紹介</h2>
+                 <p className="text-gray-400 text-sm">OUR LOCATIONS</p>
               </div>
-            ))}
-          </div>
+              <div className="p-12 md:w-2/3 space-y-8">
+                 <div>
+                    <h3 className="font-bold text-lg flex items-center gap-2 mb-2"><span className="w-2 h-2 bg-[#D32F2F] rounded-full"></span> 札幌本社工場</h3>
+                    <p className="text-sm text-gray-600 pl-4">〒004-0871 札幌市清田区平岡1条5丁目2番1号<br/>TEL: 011-881-1116(代)</p>
+                 </div>
+                 <div>
+                    <h3 className="font-bold text-lg flex items-center gap-2 mb-2"><span className="w-2 h-2 bg-[#D32F2F] rounded-full"></span> 苫小牧工場</h3>
+                    <p className="text-sm text-gray-600 pl-4">〒053-0001 苫小牧市一本松町9-6<br/>TEL: 0144-55-5544(代)</p>
+                 </div>
+              </div>
+           </div>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-[#1a1a1a] text-[#999999] py-16 text-sm border-t border-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-12 mb-12">
-            <div className="col-span-2">
-              <h2 className="text-2xl font-black text-white mb-2">株式会社月寒製作所</h2>
-              <p className="text-xs text-gray-500 mb-6 font-mono">TSUKISAMU MANUFACTURING CO., LTD. (Since 1961)</p>
-              <p className="mb-4">リサイクルを再定義する。<br/>資源循環のプロフェッショナルとして、地域社会と地球環境に貢献します。</p>
-            </div>
-            <div>
-              <h3 className="text-white font-bold mb-4">苫小牧工場</h3>
-              <p>〒053-0001<br/>北海道苫小牧市一本松町9-6</p>
-              <p className="mt-2">TEL: 0144-55-5544(代)</p>
-              <p className="mt-4 text-xs text-gray-500">※本システム（Factory OS）の運用拠点</p>
-            </div>
-            <div>
-              <h3 className="text-white font-bold mb-4">本社工場</h3>
-              <p>〒004-0871<br/>札幌市清田区平岡1条5丁目2番1号</p>
-              <p className="mt-2">TEL: 011-881-1116(代)</p>
-              <div className="mt-4 pt-4 border-t border-gray-800">
-                <a href="/factory" className="text-gray-500 hover:text-red-500 transition-colors">工場管理ログイン (Admin)</a>
-              </div>
-            </div>
-          </div>
-          <div className="text-center pt-8 border-t border-gray-800">
-            <p>© 2026 Tsukisamu Seisakusho Co., Ltd. All Rights Reserved.</p>
-          </div>
+        <div className="container mx-auto px-4 text-center">
+            <h2 className="text-2xl font-black text-white mb-2">株式会社月寒製作所</h2>
+            <p className="text-xs text-gray-500 mb-6 font-mono">TSUKISAMU MANUFACTURING CO., LTD. (Since 1961)</p>
+            <p>© 2026 All Rights Reserved.</p>
         </div>
       </footer>
+
+      {/* CRM Sales Map Modal */}
+      {isCrmOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+           <div className="bg-white w-full max-w-4xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+              <div className="bg-[#1a1a1a] text-white p-4 flex justify-between items-center">
+                 <h3 className="font-bold flex items-center gap-2"><IconMapPin /> 営業ターゲットリスト (CRM)</h3>
+                 <button onClick={() => setIsCrmOpen(false)}><IconX /></button>
+              </div>
+              <div className="p-4 border-b">
+                 <div className="relative">
+                    <IconSearch className="absolute left-3 top-3 text-gray-400" />
+                    <input type="text" placeholder="企業名・住所で検索..." className="w-full pl-10 pr-4 py-2 border rounded-lg bg-gray-50 outline-none focus:border-black transition-colors" value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
+                 </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-0">
+                 <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-500 font-bold sticky top-0">
+                       <tr>
+                          <th className="p-4">企業名</th>
+                          <th className="p-4">住所</th>
+                          <th className="p-4">ランク</th>
+                          <th className="p-4">アクション</th>
+                       </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                       {crmData.filter(t => t.name.includes(searchTerm) || t.address.includes(searchTerm)).map(target => (
+                          <tr key={target.id} className="hover:bg-gray-50">
+                             <td className="p-4 font-bold">{target.name}</td>
+                             <td className="p-4 text-gray-500">{target.address}</td>
+                             <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold ${target.priority === 'S' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>{target.priority}</span></td>
+                             <td className="p-4">
+                                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.name + " " + target.address)}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                                   <IconMapPin size={14} /> マップを開く
+                                </a>
+                             </td>
+                          </tr>
+                       ))}
+                    </tbody>
+                 </table>
+              </div>
+           </div>
+        </div>
+      )}
 
       {/* POS Modal */}
       {isPosOpen && (
@@ -465,12 +474,22 @@ export default function LandingPage() {
                        ))
                      )}
                    </div>
-                   {cart.length > 0 && !user && (
-                     <div className="bg-amber-50 p-4 border-t border-amber-100 animate-in slide-in-from-bottom-4">
-                        <div className="flex justify-between text-xs mb-1"><span className="text-gray-500">一般価格:</span><span className="font-bold">¥{subTotal.toLocaleString()}</span></div>
-                        <div className="flex justify-between items-center"><span className="text-sm font-bold text-amber-700 flex items-center gap-1"><span className="text-lg">👑</span> 会員価格なら:</span><span className="text-xl font-black text-amber-600">¥{(cart.reduce((a,b) => a + (b.weight * (b.unit + 20)), 0)).toLocaleString()}</span></div>
+                   
+                   {/* Smart Labor (Admin Only) */}
+                   {user && cart.length > 0 && (
+                     <div className="bg-blue-50 p-4 border-t border-blue-100 animate-in slide-in-from-bottom-4">
+                        <div className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1"><IconZap size={14} /> Smart Labor (Profit Simulation)</div>
+                        <div className="flex justify-between items-center mb-1">
+                           <span className="text-xs text-gray-500">予想粗利:</span>
+                           <span className="font-bold text-blue-700">¥{totalProfit.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                           <span className="text-xs text-gray-500">時給換算 (20kg/h):</span>
+                           <span className="font-bold text-green-600">¥{hourlyWage.toLocaleString()}/h</span>
+                        </div>
                      </div>
                    )}
+
                    <div className="p-6 bg-[#1a1a1a] text-white shrink-0">
                       <div className="flex justify-between items-end mb-6"><span className="text-sm text-gray-400">お支払い予定額</span><span className="text-4xl font-black tracking-tight">¥{subTotal.toLocaleString()}</span></div>
                       {!user ? (<button onClick={() => alert("初回ID発行フローへ")} className="w-full bg-[#D32F2F] hover:bg-[#B71C1C] text-white py-4 rounded-xl font-bold shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2">買取申込 & ID発行</button>) : (<button onClick={() => alert("送信完了")} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold shadow-lg">取引確定 (会員)</button>)}
