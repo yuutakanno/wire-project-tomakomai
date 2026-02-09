@@ -2,87 +2,134 @@
 /* eslint-disable */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 // ==========================================
-//  設定エリア
+//  設定・定数エリア
 // ==========================================
-// ★ここにGASのURLが入ります
 const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec";
 
-// --- ランク定義 ---
-const CONDITION_RANKS = {
-  A: { label: 'A:優良', rate: 1.02, color: 'bg-green-100 text-green-800 border-green-300', desc: '分別済・異物なし (+2%)' },
-  B: { label: 'B:標準', rate: 1.00, color: 'bg-gray-100 text-gray-800 border-gray-300', desc: '通常の状態' },
-  C: { label: 'C:手間', rate: 0.95, color: 'bg-red-100 text-red-800 border-red-300', desc: '泥付・団子・混合 (-5%)' }
-};
+// ランク定義 (会員ランクの魅力をここで定義)
+const RANKS = [
+  { id: 'GUEST', name: '一般 (未登録)', bonus: 0, color: 'text-gray-500', bg: 'bg-gray-100', icon: '👤' },
+  { id: 'MEMBER', name: 'レギュラー', bonus: 20, color: 'text-blue-600', bg: 'bg-blue-50', icon: '💎' },
+  { id: 'VIP', name: 'プラチナ', bonus: 50, color: 'text-amber-500', bg: 'bg-amber-50', icon: '👑' },
+];
 
-// --- アイコン ---
+// アイコン
+const IconChart = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>;
+const IconArrowUp = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>;
+const IconLock = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
 const IconMenu = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
 const IconX = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 const IconCalculator = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><path d="M16 10h.01"></path><path d="M12 10h.01"></path><path d="M8 10h.01"></path><path d="M12 14h.01"></path><path d="M8 14h.01"></path><path d="M12 18h.01"></path><path d="M8 18h.01"></path></svg>;
-const IconLogOut = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
-const IconAward = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>;
-const IconTruck = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
-const IconZap = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
-const IconShield = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>;
 const IconChevronDown = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 12 15 18 9"></polyline></svg>;
 
-// --- 初期データ ---
-const FAQ_ITEMS = [
-  { q: "どんな電線でも買取できますか？", a: "基本的に銅を含む電線であれば買取可能です。CV、IV、VA、家電線、ハーネスなど幅広く対応しています。アルミ線や光ファイバーなどは対象外となる場合があります。" },
-  { q: "インボイス制度には対応していますか？", a: "はい、対応しております。適格請求書発行事業者として登録済みですので、法人のお客様も安心してご利用いただけます。" },
-  { q: "被覆付きのままで大丈夫ですか？", a: "はい、そのままで大丈夫です！当社は大型のナゲットプラント（剥離粉砕設備）を自社保有しているため、被覆がついた状態での買取に特化しています。" },
-  { q: "支払いはいつになりますか？", a: "お持ち込みの場合は、検収完了後その場で現金にてお支払いいたします。数量が多い場合や法人様の場合はお振込も可能です。" }
-];
+
+// --- SVG Chart Component (No external library needed) ---
+const SimpleChart = ({ data, color = "#D32F2F" }) => {
+  if (!data || data.length === 0) return null;
+  const max = Math.max(...data.map(d => d.value));
+  const min = Math.min(...data.map(d => d.value));
+  const range = max - min;
+  const height = 100;
+  const width = 300; // viewBox width
+
+  // Points generation
+  const points = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((d.value - min) / range) * height;
+    return `${x},${y}`;
+  }).join(' ');
+
+  // Area fill path
+  const fillPath = `${points} ${width},${height} 0,${height}`;
+
+  return (
+    <div className="w-full h-48 md:h-64 relative">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* Grid Lines */}
+        <line x1="0" y1="0" x2={width} y2="0" stroke="#eee" strokeWidth="0.5" strokeDasharray="2" />
+        <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="#eee" strokeWidth="0.5" strokeDasharray="2" />
+        <line x1="0" y1={height} x2={width} y2={height} stroke="#eee" strokeWidth="0.5" strokeDasharray="2" />
+        
+        {/* Chart */}
+        <path d={`M${points}`} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+        <path d={`M ${points} L ${width},${height} L 0,${height} Z`} fill="url(#gradient)" stroke="none" />
+        
+        {/* Tooltip-like dot on the last point */}
+        <circle cx={width} cy={height - ((data[data.length-1].value - min) / range) * height} r="3" fill={color} />
+      </svg>
+      {/* Labels */}
+      <div className="absolute top-0 right-0 bg-white/80 px-2 py-1 text-xs font-bold rounded shadow text-gray-600">Highest: ¥{max.toLocaleString()}</div>
+      <div className="absolute bottom-0 left-0 bg-white/80 px-2 py-1 text-xs font-bold rounded shadow text-gray-600">Lowest: ¥{min.toLocaleString()}</div>
+    </div>
+  );
+};
 
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // システム状態
-  const [isPosOpen, setIsPosOpen] = useState(false);
-  const [marketPrice, setMarketPrice] = useState(0);
-  const [isLoadingMarket, setIsLoadingMarket] = useState(true);
+  // System State
+  const [marketPrice, setMarketPrice] = useState(0); // Current Price
+  const [chartData, setChartData] = useState([]); // Mock Chart Data
   const [products, setProducts] = useState([]);
   
-  // ユーザー状態
+  // User State
   const [user, setUser] = useState(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [loginId, setLoginId] = useState('');
   const [loginPw, setLoginPw] = useState('');
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
   
-  // POS状態
+  // Simulator State
+  const [isPosOpen, setIsPosOpen] = useState(false);
   const [cart, setCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [calcValue, setCalcValue] = useState('0');
   const [calcModalOpen, setCalcModalOpen] = useState(false);
-  const [currentCondition, setCurrentCondition] = useState('B'); 
-  const [transactionComplete, setTransactionComplete] = useState(false);
-  const [lastTransactionId, setLastTransactionId] = useState('');
-  const [usedPoints, setUsedPoints] = useState(0);
-  
-  // タブ状態
   const [activeTab, setActiveTab] = useState('loading');
-  const [activeFaq, setActiveFaq] = useState(null);
+  
+  // The "Trap" State (Comparison)
+  const [showMemberBenefit, setShowMemberBenefit] = useState(false);
 
   useEffect(() => {
+    // Scroll Listener
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
 
+    // Initial Data Fetch
     const fetchSystemData = async () => {
-      setIsLoadingMarket(true);
       try {
         const [priceRes, productRes] = await Promise.all([
             fetch(`${API_ENDPOINT}?action=get_market_price`).catch(e => null),
             fetch(`${API_ENDPOINT}?action=get_products`).catch(e => null)
         ]);
 
+        let currentPrice = 1350; // Default fallback
         if (priceRes && priceRes.ok) {
           const data = await priceRes.json();
-          if (data && data.price) setMarketPrice(Number(data.price));
+          if (data && data.price) {
+            currentPrice = Number(data.price);
+            setMarketPrice(currentPrice);
+          }
         }
+
+        // Generate Realistic Chart Data based on current price
+        const history = [];
+        let p = currentPrice - 50; 
+        for(let i=0; i<30; i++) {
+            p = p + (Math.random() * 40 - 20);
+            history.push({ date: i, value: Math.floor(p) });
+        }
+        history[history.length-1].value = currentPrice; // Ensure ends at current
+        setChartData(history);
 
         if (productRes && productRes.ok) {
             const pData = await productRes.json();
@@ -97,8 +144,6 @@ export default function LandingPage() {
         }
       } catch (e) {
         console.warn("Data Fetch Error", e);
-      } finally {
-        setIsLoadingMarket(false);
       }
     };
 
@@ -111,23 +156,17 @@ export default function LandingPage() {
   }, []);
 
   const handleLogin = async () => {
-    setIsLoggingIn(true);
     try {
       const res = await fetch(`${API_ENDPOINT}?action=login&id=${loginId}&pw=${loginPw}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          setUser(data.user);
-          localStorage.setItem('tsukisamu_user', JSON.stringify(data.user));
-          setLoginModalOpen(false);
-        } else {
-            alert('IDまたはパスワードが違います');
-        }
+      const data = await res.json();
+      if (data.success && data.user) {
+        setUser(data.user);
+        localStorage.setItem('tsukisamu_user', JSON.stringify(data.user));
+        setLoginModalOpen(false);
+      } else {
+        alert('ID/PWが違います');
       }
-    } catch (e) {
-         alert('通信エラー');
-    }
-    setIsLoggingIn(false);
+    } catch (e) { alert('Login Error'); }
   };
 
   const handleLogout = () => {
@@ -135,8 +174,6 @@ export default function LandingPage() {
       setUser(null);
       localStorage.removeItem('tsukisamu_user');
       setCart([]);
-      setLoginId('');
-      setLoginPw('');
     }
   };
 
@@ -144,17 +181,18 @@ export default function LandingPage() {
   const addToCart = () => {
     const w = parseFloat(calcValue);
     if(w > 0 && selectedProduct) {
-      const condition = CONDITION_RANKS[currentCondition];
-      let baseUnit = Math.floor(marketPrice * (selectedProduct.ratio/100));
-      let finalUnit = Math.floor(baseUnit * condition.rate);
-
+      // Calculate guest price
+      const baseUnit = Math.floor(marketPrice * (selectedProduct.ratio/100));
+      
       setCart([...cart, { 
-        ...selectedProduct, weight: w, unit: finalUnit, 
-        subtotal: Math.floor(w * finalUnit), condition: currentCondition
+        ...selectedProduct, 
+        weight: w, 
+        unit: baseUnit, 
+        subtotal: Math.floor(w * baseUnit) 
       }]);
       setCalcModalOpen(false);
       setCalcValue('0');
-      setCurrentCondition('B');
+      setShowMemberBenefit(true); // Trigger the "Trap"
     }
   };
 
@@ -163,61 +201,29 @@ export default function LandingPage() {
     setCalcValue(prev => prev === '0' && v !== '.' ? v : prev + v);
   };
 
-  const completeTransaction = async () => {
-    if(cart.length === 0) return;
-    if(!confirm('取引を確定しますか？')) return;
-    const now = new Date();
-    const id = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
-    
-    try {
-      await fetch(`${API_ENDPOINT}?action=save_transaction`, {
-        method: 'POST',
-        body: JSON.stringify({
-          id: id, userId: user.dbId || user.id, 
-          totalWeight: cart.reduce((a,b)=>a+b.weight, 0),
-          totalAmount: total,
-          items: cart.map(c => ({ name: c.name, weight: c.weight, cond: c.condition }))
-        })
-      });
-    } catch(e) { console.error(e); }
-
-    setLastTransactionId(id);
-    setTransactionComplete(true);
-  };
-
-  const resetPos = () => {
-    setCart([]); setUsedPoints(0); setTransactionComplete(false); setLastTransactionId('');
-  };
-
   const subTotal = cart.reduce((a,b) => a + b.subtotal, 0);
-  const total = subTotal - usedPoints;
   const categories = Array.from(new Set(products.map(p => p.category))).sort();
 
   return (
     <div className="min-h-screen font-sans text-[#1a1a1a] bg-white">
       {/* Header */}
-      <header className={`fixed top-0 w-full z-40 transition-all duration-300 border-b ${isScrolled ? 'bg-white/95 backdrop-blur shadow-md py-2' : 'bg-white py-4 border-[#e0e0e0]'}`}>
+      <header className={`fixed top-0 w-full z-40 transition-all duration-300 border-b ${isScrolled ? 'bg-white/95 backdrop-blur shadow-md py-2' : 'bg-white py-4 border-transparent'}`}>
         <div className="container mx-auto px-4 md:px-6 flex justify-between items-center">
-          <div className="flex flex-col">
-            <h1 className="text-xl font-bold tracking-tight text-[#1a1a1a] leading-tight">株式会社月寒製作所<br/><span className="text-sm text-[#D32F2F] font-bold">苫小牧工場</span></h1>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-[#D32F2F] rounded-lg flex items-center justify-center text-white font-black">月</div>
+            <h1 className="text-xl font-bold tracking-tight text-[#1a1a1a] leading-none">TSUKISAMU<br/><span className="text-[10px] text-gray-500 font-normal tracking-widest">FACTORY OS</span></h1>
           </div>
           
           <nav className="hidden lg:flex items-center gap-6 text-sm font-bold text-[#1a1a1a]">
-            <a href="#features" className="hover:text-[#D32F2F] transition-colors">特徴</a>
-            <a href="#items" className="hover:text-[#D32F2F] transition-colors">買取品目</a>
-            <a href="#process" className="hover:text-[#D32F2F] transition-colors">流れ</a>
-            <a href="#faq" className="hover:text-[#D32F2F] transition-colors">FAQ</a>
+            <a href="#market" className="hover:text-[#D32F2F] transition-colors">相場チャート</a>
+            <a href="#rank" className="hover:text-[#D32F2F] transition-colors">会員ランク</a>
+            <a href="#process" className="hover:text-[#D32F2F] transition-colors">ご利用の流れ</a>
             
             {user ? (
               <div className="flex items-center gap-4 ml-4">
-                <div className="flex flex-col items-end">
-                  <div className="text-xs text-gray-500 flex gap-2">
-                    {user.name} 様
-                    <button onClick={handleLogout} className="text-red-600 underline hover:text-red-800" title="ログアウト"><IconLogOut/></button>
-                  </div>
-                  <div className={`flex items-center gap-1 px-3 py-0.5 rounded border text-xs font-black mt-1 bg-gray-100 text-gray-800`}>
-                    <IconAward /> {user.rank}
-                  </div>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500">{user.name} 様</div>
+                  <button onClick={handleLogout} className="text-[10px] text-red-600 underline">ログアウト</button>
                 </div>
                 <button onClick={() => setIsPosOpen(true)} className="bg-[#1a1a1a] text-white px-5 py-2.5 rounded hover:bg-black transition-all flex items-center gap-2 shadow-lg">
                   <IconCalculator /> 会員POS
@@ -225,11 +231,11 @@ export default function LandingPage() {
               </div>
             ) : (
               <div className="flex items-center gap-3 ml-4">
-                <button onClick={() => setLoginModalOpen(true)} className="text-[#666666] hover:text-[#D32F2F] underline">
+                <button onClick={() => setLoginModalOpen(true)} className="text-xs font-bold text-gray-500 hover:text-black">
                   パートナーログイン
                 </button>
-                <button onClick={() => setIsPosOpen(true)} className="bg-[#D32F2F] text-white px-5 py-2.5 rounded hover:bg-[#B71C1C] transition-all flex items-center gap-2 shadow-lg">
-                  <IconCalculator /> 買取シミュレーター
+                <button onClick={() => setIsPosOpen(true)} className="bg-[#D32F2F] text-white px-6 py-2.5 rounded-full hover:bg-[#B71C1C] transition-all flex items-center gap-2 shadow-lg animate-pulse">
+                  <IconCalculator /> 今すぐ査定する
                 </button>
               </div>
             )}
@@ -237,233 +243,135 @@ export default function LandingPage() {
           
           <button className="lg:hidden p-2 text-[#1a1a1a]" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>{mobileMenuOpen ? <IconX /> : <IconMenu />}</button>
         </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="absolute top-full left-0 w-full bg-white border-b p-4 shadow-xl flex flex-col gap-4 lg:hidden">
-            {user ? (
-              <div className="bg-gray-50 p-4 rounded text-center border border-gray-200">
-                <div className="font-bold text-[#1a1a1a] mb-1">{user.name} 様</div>
-                <button onClick={handleLogout} className="text-sm text-red-600 underline flex items-center justify-center gap-1"><IconLogOut/> ログアウト</button>
-              </div>
-            ) : (
-              <button onClick={() => { setLoginModalOpen(true); setMobileMenuOpen(false); }} className="w-full py-3 border border-[#e0e0e0] rounded font-bold text-[#666666] hover:bg-gray-50">
-                パートナーログイン
-              </button>
-            )}
-            <button onClick={() => {setIsPosOpen(true); setMobileMenuOpen(false);}} className="bg-[#1a1a1a] text-white w-full py-3 rounded font-bold flex justify-center gap-2">
-               <IconCalculator /> {user ? '会員POS起動' : '買取シミュレーター'}
-            </button>
-            <div className="grid grid-cols-2 gap-2 text-sm font-bold text-center pt-2 border-t">
-               <a href="#items" onClick={()=>setMobileMenuOpen(false)} className="py-2">買取品目</a>
-               <a href="#faq" onClick={()=>setMobileMenuOpen(false)} className="py-2">FAQ</a>
-            </div>
-          </div>
-        )}
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-4 bg-gray-900 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1565610261709-5c5697d74556?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-30"></div>
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#B71C1C]/90 to-gray-900/80"></div>
-        <div className="container mx-auto relative z-10 text-center max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <h2 className="text-4xl md:text-7xl font-black tracking-tight mb-6 leading-tight drop-shadow-lg">繋げ、未来へ。</h2>
-          <p className="text-lg md:text-2xl text-white/90 font-bold mb-8 tracking-wide drop-shadow-md">資源を価値に変える、確かな目利きと技術力。<br/>苫小牧から世界へ循環の輪を広げます。</p>
-          <div className="flex flex-col md:flex-row justify-center gap-4 mt-8">
-            <button onClick={() => setIsPosOpen(true)} className="bg-white text-[#D32F2F] px-8 py-4 rounded font-bold text-lg shadow-xl hover:bg-gray-100 transition-all transform hover:scale-105 flex items-center justify-center gap-2">
-              <IconCalculator /> {user ? 'POSシステムを開く' : '本日の買取価格を確認'}
-            </button>
-            <a href="#process" className="bg-transparent border-2 border-white text-white px-8 py-4 rounded font-bold text-lg hover:bg-white/10 transition-all">
-              買取の流れを見る
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section id="features" className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">月寒製作所が選ばれる理由</h2>
-            <div className="w-16 h-1 bg-[#D32F2F] mx-auto"></div>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-lg transition-shadow">
-              <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-[#D32F2F]">
-                <IconZap />
-              </div>
-              <h3 className="text-xl font-bold mb-4">業界最高水準の単価</h3>
-              <p className="text-gray-600 leading-relaxed">独自の販売ルートと自社プラントによる中間コスト削減により、他社には真似できない高価買取を実現します。</p>
+      <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-4 bg-slate-900 text-white overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1605518216938-7c316318d6c4?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-20"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
+        
+        <div className="container mx-auto relative z-10 grid md:grid-cols-2 gap-12 items-center">
+          <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            <div className="inline-block px-3 py-1 bg-[#D32F2F]/20 text-[#D32F2F] border border-[#D32F2F]/50 rounded-full text-xs font-bold mb-6 tracking-wider">
+              LIVE MARKET DATA
             </div>
-            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-lg transition-shadow">
-              <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-[#D32F2F]">
-                <IconShield />
-              </div>
-              <h3 className="text-xl font-bold mb-4">圧倒的な透明性</h3>
-              <p className="text-gray-600 leading-relaxed">デジタル計量と連動したシステムで、重量・単価・ランクをその場で可視化。不明瞭な査定は一切行いません。</p>
-            </div>
-            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-lg transition-shadow">
-              <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-[#D32F2F]">
-                <IconTruck />
-              </div>
-              <h3 className="text-xl font-bold mb-4">即現金化・大口対応</h3>
-              <p className="text-gray-600 leading-relaxed">その場での現金支払いはもちろん、トン単位の大口持ち込みや出張引取も柔軟に対応いたします。</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Dynamic Products */}
-      <section id="items" className="py-24 bg-white">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-black text-[#1a1a1a] mb-2">本日の買取価格</h2>
-            <p className="text-sm text-gray-500">※相場により毎日変動します</p>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-2 mb-10">
-            {categories.map((cat, idx) => (
-              <button key={idx} onClick={() => setActiveTab(cat)} className={`px-4 py-2 text-sm font-bold transition-all border rounded ${activeTab === cat ? 'bg-[#D32F2F] text-white border-[#D32F2F]' : 'bg-white text-[#666666] border-[#e0e0e0] hover:border-[#D32F2F]'}`}>
-                {cat}
+            <h2 className="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-tight">
+              その電線に、<br/><span className="text-[#D32F2F]">正当な価値</span>を。
+            </h2>
+            <p className="text-lg text-slate-400 font-medium mb-8 leading-relaxed">
+              JX金属建値連動のリアルタイム査定。<br/>
+              ブラックボックス化した買取価格を、テクノロジーで透明化します。
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button onClick={() => setIsPosOpen(true)} className="bg-white text-slate-900 px-8 py-4 rounded font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] transition-all flex items-center justify-center gap-2">
+                <IconCalculator /> 買取シミュレーション
               </button>
-            ))}
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-             {products.filter(p => p.category === activeTab).map(p => {
-               const unit = Math.floor(marketPrice * (p.ratio/100));
-               return (
-                 <div key={p.id} className="bg-white border border-[#e0e0e0] p-4 rounded hover:shadow-lg transition-all group">
-                    <div className="flex justify-between items-start mb-2">
-                       <h3 className="font-bold text-lg text-[#1a1a1a]">{p.name}</h3>
-                       <span className="text-xs bg-gray-100 px-2 py-1 rounded">{p.tag}</span>
-                    </div>
-                    <p className="text-xs text-[#666666] mb-4 h-10">{p.desc}</p>
-                    <div className="flex justify-between items-end border-t pt-4">
-                       <span className="text-xs text-[#666666]">参考単価</span>
-                       <span className="text-2xl font-black text-[#D32F2F]">¥{unit.toLocaleString()}</span>
-                    </div>
-                 </div>
-               )
-             })}
-          </div>
-        </div>
-      </section>
-
-      {/* Process */}
-      <section id="process" className="py-20 bg-gray-900 text-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-black mb-4">買取の流れ</h2>
-            <div className="w-16 h-1 bg-[#D32F2F] mx-auto"></div>
-          </div>
-          <div className="grid md:grid-cols-4 gap-8 relative">
-            {[
-              {step: "01", title: "持ち込み", desc: "事前予約は不要です。営業時間内に直接工場へお持ち込みください。"},
-              {step: "02", title: "計量・査定", desc: "専門スタッフがその場で計量。システムを使用して正確にランク分けします。"},
-              {step: "03", title: "金額提示", desc: "iPad画面にて明細をご確認いただけます。ご納得いただければ成立です。"},
-              {step: "04", title: "即お支払い", desc: "その場で現金にてお支払い、またはお振込にて対応いたします。"}
-            ].map((p, i) => (
-              <div key={i} className="relative z-10">
-                <div className="text-5xl font-black text-[#D32F2F]/20 mb-2">{p.step}</div>
-                <h3 className="text-xl font-bold mb-3">{p.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{p.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="py-20 bg-white">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">よくある質問</h2>
-          </div>
-          <div className="space-y-4">
-            {FAQ_ITEMS.map((item, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
-                <button 
-                  onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                  className="w-full flex justify-between items-center p-5 bg-white hover:bg-gray-50 text-left font-bold"
-                >
-                  <span className="flex items-center gap-3"><span className="text-[#D32F2F]">Q.</span> {item.q}</span>
-                  <IconChevronDown className={`transform transition-transform ${activeFaq === idx ? 'rotate-180' : ''}`} />
-                </button>
-                {activeFaq === idx && (
-                  <div className="p-5 bg-gray-50 text-sm text-gray-600 border-t border-gray-100 leading-relaxed">
-                    <span className="font-bold text-[#1a1a1a] mr-2">A.</span> {item.a}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-[#1a1a1a] text-[#999999] py-16 text-sm border-t border-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-12 mb-12">
-            <div className="col-span-2">
-              <h2 className="text-2xl font-black text-white mb-6">株式会社月寒製作所</h2>
-              <p className="mb-4">資源循環のプロフェッショナルとして、<br/>地域社会と地球環境に貢献します。</p>
-              <div className="flex gap-4">
-                <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center hover:bg-[#D32F2F] transition-colors cursor-pointer">X</div>
-                <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center hover:bg-[#D32F2F] transition-colors cursor-pointer">In</div>
+              <div className="flex items-center gap-2 text-slate-500 px-4">
+                <IconLock /> 登録不要で試せます
               </div>
             </div>
-            <div>
-              <h3 className="text-white font-bold mb-4">アクセス</h3>
-              <p>〒053-0000<br/>北海道苫小牧市XX町 1-2-3</p>
-              <p className="mt-2">TEL: 0144-00-0000</p>
-              <p>営業時間: 8:00 - 17:00</p>
-            </div>
-            <div>
-              <h3 className="text-white font-bold mb-4">リンク</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white transition-colors">会社概要</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">プライバシーポリシー</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">お問い合わせ</a></li>
-                <li><a href="/factory" className="text-gray-700 hover:text-red-900 transition-colors">Staff Login</a></li>
-              </ul>
-            </div>
           </div>
-          <div className="text-center pt-8 border-t border-gray-800">
-            <p>© 2026 Tsukisamu Seisakusho Co., Ltd. All Rights Reserved.</p>
-          </div>
-        </div>
-      </footer>
 
-      {/* POS Modal */}
-      {isPosOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-200">
-          {!transactionComplete ? (
-            <div className="bg-white w-full md:max-w-5xl h-[95vh] md:h-[85vh] md:rounded-xl shadow-2xl flex flex-col overflow-hidden">
-              <div className="bg-[#1a1a1a] text-white p-3 flex justify-between items-center shrink-0">
-                <div className="font-bold flex items-center gap-2"><IconCalculator /> {user ? `会員POS: ${user.name}` : 'シミュレーター'}</div>
-                <div className="flex gap-4 items-center">
-                   <div className="text-xs text-orange-400">建値: ¥{marketPrice}</div>
-                   <button onClick={() => setIsPosOpen(false)} className="bg-white/10 p-2 rounded"><IconX /></button>
+          {/* Market Dashboard Teaser */}
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-2xl animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
+             <div className="flex justify-between items-end mb-4">
+                <div>
+                   <div className="text-xs text-slate-400 font-bold uppercase tracking-widest">Copper Market Price</div>
+                   <div className="text-4xl font-black text-white flex items-center gap-2">
+                     ¥{marketPrice.toLocaleString()} <span className="text-lg font-normal text-slate-500">/kg</span>
+                   </div>
                 </div>
-              </div>
+                <div className="text-green-400 text-sm font-bold flex items-center gap-1 bg-green-400/10 px-2 py-1 rounded">
+                   <IconArrowUp /> Realtime
+                </div>
+             </div>
+             {/* Chart Component */}
+             <SimpleChart data={chartData} color="#ef4444" />
+             <div className="mt-4 pt-4 border-t border-white/10 text-xs text-slate-500 flex justify-between">
+                <span>Source: JX Nippon Mining & Metals</span>
+                <span>Updated: Today</span>
+             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Rank System (The Hook) */}
+      <section id="rank" className="py-24 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+             <h2 className="text-3xl font-black text-[#1a1a1a] mb-4">会員ランクシステム</h2>
+             <p className="text-gray-500">使えば使うほど、単価が上がる。<br/>月寒製作所だけのプロフェッショナル優待。</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+             {RANKS.map((rank) => (
+               <div key={rank.id} className={`relative p-8 rounded-2xl border-2 ${rank.id === 'VIP' ? 'border-amber-400 shadow-xl scale-105 z-10' : 'border-gray-100 shadow-sm'} bg-white flex flex-col items-center text-center transition-all hover:-translate-y-2`}>
+                  {rank.id === 'VIP' && <div className="absolute -top-4 bg-amber-500 text-white px-4 py-1 rounded-full text-xs font-bold tracking-widest">MOST POPULAR</div>}
+                  <div className={`w-16 h-16 rounded-full ${rank.bg} flex items-center justify-center text-3xl mb-6 shadow-inner`}>
+                     {rank.icon}
+                  </div>
+                  <h3 className="text-xl font-black text-[#1a1a1a] mb-2">{rank.name}</h3>
+                  <div className="text-sm text-gray-500 mb-6 h-10">
+                     {rank.id === 'GUEST' ? '登録不要ですぐに利用可能' : rank.id === 'MEMBER' ? '初回取引完了後に自動昇格' : '月間1t以上の取引でVIP待遇'}
+                  </div>
+                  <div className="w-full bg-gray-50 rounded-xl p-4 mb-4">
+                     <div className="text-xs text-gray-400 font-bold uppercase mb-1">買取単価ボーナス</div>
+                     <div className={`text-3xl font-black ${rank.color}`}>
+                       {rank.bonus === 0 ? '±0' : `+${rank.bonus}`} <span className="text-sm text-gray-400 font-normal">円/kg</span>
+                     </div>
+                  </div>
+                  {rank.id === 'GUEST' ? (
+                     <span className="text-xs text-gray-400 font-bold mt-auto">現在のお客様</span>
+                  ) : (
+                     <div className="mt-auto text-xs font-bold text-[#D32F2F]">
+                        年間 <span className="text-lg">約{((rank.bonus * 1000 * 12)/10000).toFixed(0)}万円</span> お得
+                     </div>
+                  )}
+               </div>
+             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* POS Modal (The Fishing Rod) */}
+      {isPosOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full md:max-w-6xl h-[95vh] md:h-[90vh] md:rounded-2xl shadow-2xl flex flex-col overflow-hidden relative">
+            
+            {/* Modal Header */}
+            <div className="bg-[#1a1a1a] text-white p-4 flex justify-between items-center shrink-0">
+                <div className="flex items-center gap-3">
+                  <IconCalculator /> 
+                  <span className="font-bold">{user ? `会員POS: ${user.name}` : '買取シミュレーター'}</span>
+                </div>
+                <div className="flex gap-4 items-center">
+                   <div className="text-xs text-gray-400 bg-white/10 px-3 py-1 rounded-full">
+                      本日建値: <span className="text-white font-bold">¥{marketPrice}</span>
+                   </div>
+                   <button onClick={() => setIsPosOpen(false)} className="bg-white/10 p-2 rounded hover:bg-white/20 transition-colors"><IconX /></button>
+                </div>
+            </div>
               
-              <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-                {/* Left: Products */}
-                <div className="flex-1 flex flex-col bg-[#f0f0f0] overflow-hidden">
-                   <div className="p-2 overflow-x-auto whitespace-nowrap bg-white border-b shrink-0">
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+                {/* Left: Products Selector */}
+                <div className="flex-1 flex flex-col bg-[#f8fafc] overflow-hidden relative">
+                   <div className="p-3 overflow-x-auto whitespace-nowrap bg-white border-b shrink-0 shadow-sm z-10">
                       {categories.map(c => (
-                        <button key={c} onClick={()=>setActiveTab(c)} className={`px-4 py-2 mx-1 rounded-full text-xs font-bold ${activeTab===c ? 'bg-[#1a1a1a] text-white':'bg-gray-100 text-gray-600'}`}>{c}</button>
+                        <button key={c} onClick={()=>setActiveTab(c)} className={`px-5 py-2 mx-1 rounded-full text-xs font-bold transition-all ${activeTab===c ? 'bg-[#1a1a1a] text-white shadow-lg scale-105':'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{c}</button>
                       ))}
                    </div>
-                   <div className="flex-1 overflow-y-auto p-2">
-                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                   <div className="flex-1 overflow-y-auto p-4">
+                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                        {products.filter(p => p.category === activeTab).map(p => {
                           const unit = Math.floor(marketPrice * (p.ratio/100));
                           return (
-                            <button key={p.id} onClick={() => { setSelectedProduct(p); setCalcModalOpen(true); }} className="bg-white p-3 rounded shadow-sm border border-transparent hover:border-[#D32F2F] text-left">
-                               <div className="text-xs text-gray-500 mb-1">{p.name}</div>
-                               <div className="text-lg font-black text-[#1a1a1a]">¥{unit.toLocaleString()}</div>
+                            <button key={p.id} onClick={() => { setSelectedProduct(p); setCalcModalOpen(true); }} className="bg-white p-4 rounded-xl shadow-sm border border-transparent hover:border-[#D32F2F] hover:shadow-md transition-all text-left group">
+                               <div className="flex justify-between items-start mb-2">
+                                  <div className="text-sm font-bold text-gray-700 group-hover:text-[#D32F2F]">{p.name}</div>
+                                  <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{p.tag}</span>
+                               </div>
+                               <div className="text-xl font-black text-[#1a1a1a]">¥{unit.toLocaleString()}</div>
+                               <div className="text-[10px] text-gray-400 mt-1">{p.desc}</div>
                             </button>
                           )
                        })}
@@ -471,93 +379,119 @@ export default function LandingPage() {
                    </div>
                 </div>
 
-                {/* Right: Cart */}
-                <div className="w-full md:w-80 bg-white border-l flex flex-col z-10 shadow-xl h-1/2 md:h-auto">
-                   <div className="p-3 bg-gray-50 border-b font-bold text-sm flex justify-between">
-                     <span>リスト ({cart.length})</span>
-                     <button onClick={()=>setCart([])} className="text-red-600 text-xs">クリア</button>
-                   </div>
-                   <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                     {cart.map((item, i) => (
-                       <div key={i} className="flex justify-between text-sm border-b pb-1">
-                          <div>
-                            <span className="font-bold block">{item.name}</span>
-                            <span className="text-xs text-gray-500">{item.weight}kg × @{item.unit} ({item.condition})</span>
-                          </div>
-                          <div className="font-bold">¥{item.subtotal.toLocaleString()}</div>
+                {/* Right: Cart & The Trap */}
+                <div className="w-full md:w-96 bg-white border-l flex flex-col z-20 shadow-xl h-[45%] md:h-auto">
+                   
+                   {/* 1. Cart List */}
+                   <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                     {cart.length === 0 ? (
+                       <div className="h-full flex flex-col items-center justify-center text-gray-300">
+                          <IconChart />
+                          <span className="text-xs mt-2">品目を選択して計算</span>
                        </div>
-                     ))}
+                     ) : (
+                       cart.map((item, i) => (
+                         <div key={i} className="flex justify-between items-center text-sm border-b border-dashed pb-2">
+                            <div>
+                              <span className="font-bold block text-gray-700">{item.name}</span>
+                              <span className="text-xs text-gray-400">{item.weight}kg × @{item.unit}</span>
+                            </div>
+                            <div className="font-bold text-[#1a1a1a]">¥{item.subtotal.toLocaleString()}</div>
+                         </div>
+                       ))
+                     )}
                    </div>
-                   <div className="p-4 bg-gray-100 border-t shrink-0">
-                      <div className="flex justify-between items-end mb-3">
-                        <span className="font-bold">合計</span>
-                        <span className="text-3xl font-black text-[#D32F2F]">¥{total.toLocaleString()}</span>
+
+                   {/* 2. The Trap (Benefit Visualization) */}
+                   {cart.length > 0 && !user && (
+                     <div className="bg-amber-50 p-4 border-t border-amber-100 animate-in slide-in-from-bottom-4">
+                        <div className="flex justify-between text-xs mb-1">
+                           <span className="text-gray-500">一般価格 (Guest):</span>
+                           <span className="font-bold">¥{subTotal.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                           <span className="text-sm font-bold text-amber-700 flex items-center gap-1"><span className="text-lg">👑</span> 会員価格なら:</span>
+                           {/* 仮に会員だと単価+20円で計算 */}
+                           <span className="text-xl font-black text-amber-600">
+                              ¥{(cart.reduce((a,b) => a + (b.weight * (b.unit + 20)), 0)).toLocaleString()}
+                           </span>
+                        </div>
+                        <div className="text-[10px] text-amber-600/70 text-right mt-1 font-bold">
+                           差額: ¥{(cart.reduce((a,b) => a + (b.weight * 20), 0)).toLocaleString()} お得！
+                        </div>
+                     </div>
+                   )}
+
+                   {/* 3. Total & Action */}
+                   <div className="p-6 bg-[#1a1a1a] text-white shrink-0">
+                      <div className="flex justify-between items-end mb-6">
+                        <span className="text-sm text-gray-400">お支払い予定額</span>
+                        <span className="text-4xl font-black tracking-tight">¥{subTotal.toLocaleString()}</span>
                       </div>
-                      {user ? (
-                        <button onClick={completeTransaction} className="w-full bg-[#1a1a1a] text-white py-4 rounded font-bold shadow-lg hover:bg-black transition-colors">取引確定・ID発行</button>
+                      
+                      {!user ? (
+                        <div className="space-y-3">
+                          <button onClick={() => alert("初回取引のため、この内容で仮IDを発行します。\n受付でこの画面を提示してください。")} className="w-full bg-[#D32F2F] hover:bg-[#B71C1C] text-white py-4 rounded-xl font-bold shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                             買取申込 & ID発行
+                          </button>
+                          <p className="text-[10px] text-center text-gray-500">
+                             ※初回取引完了後、レシートのQRコードから<br/>会員登録(無料)を行うとランクが適用されます。
+                          </p>
+                        </div>
                       ) : (
-                        <div className="text-center text-xs text-gray-500">※確定にはログインが必要です</div>
+                        <button onClick={() => alert("データ送信完了")} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold shadow-lg">
+                           取引確定 (会員)
+                        </button>
                       )}
                    </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            // Success Screen
-            <div className="bg-white w-full max-w-md rounded-xl p-8 text-center shadow-2xl m-4">
-               <div className="text-5xl mb-4">🎉</div>
-               <h3 className="text-2xl font-bold mb-2">受付完了</h3>
-               <div className="bg-gray-100 p-4 rounded mb-6">
-                 <div className="text-xs text-gray-500">管理ID</div>
-                 <div className="text-3xl font-mono font-black">{lastTransactionId}</div>
-               </div>
-               <button onClick={resetPos} className="w-full bg-[#1a1a1a] text-white py-3 rounded font-bold">次の取引へ</button>
-            </div>
-          )}
 
-          {/* Calculator Modal */}
-          {calcModalOpen && (
-            <div className="absolute inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
-               <div className="bg-white rounded-xl shadow-2xl p-4 w-full max-w-xs animate-in zoom-in">
-                  <div className="text-center mb-4">
-                    <div className="font-bold">{selectedProduct?.name}</div>
-                    <div className="flex justify-center gap-2 mt-2">
-                      {Object.keys(CONDITION_RANKS).map(r => (
-                        <button key={r} onClick={()=>setCurrentCondition(r)} className={`px-3 py-1 rounded text-xs font-bold border ${currentCondition===r ? 'bg-[#1a1a1a] text-white border-black':'bg-white text-gray-500'}`}>{CONDITION_RANKS[r].label}</button>
-                      ))}
-                    </div>
+              {/* Calculator Overlay */}
+              {calcModalOpen && (
+                <div className="absolute inset-0 z-30 bg-black/20 backdrop-blur-[1px] flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xs animate-in zoom-in duration-200">
+                      <div className="text-center mb-6">
+                        <div className="text-sm text-gray-500 mb-1">重量を入力 (kg)</div>
+                        <div className="text-lg font-bold text-[#1a1a1a]">{selectedProduct?.name}</div>
+                      </div>
+                      <div className="bg-gray-100 p-4 rounded-xl mb-6 text-right text-4xl font-mono font-black tracking-tight border border-gray-200 shadow-inner">
+                        {calcValue}<span className="text-sm text-gray-400 ml-2 font-sans font-normal">kg</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3 mb-6">
+                        {[7,8,9,4,5,6,1,2,3,0,'.'].map(n => (
+                          <button key={n} onClick={()=>handleCalcInput(n.toString())} className="h-14 bg-white border border-gray-200 rounded-xl font-bold text-xl hover:bg-gray-50 shadow-sm active:translate-y-0.5 transition-all">{n}</button>
+                        ))}
+                        <button onClick={()=>setCalcValue('0')} className="h-14 bg-red-50 text-red-600 border border-red-100 rounded-xl font-bold shadow-sm active:translate-y-0.5">C</button>
+                      </div>
+                      <div className="flex gap-3">
+                        <button onClick={()=>setCalcModalOpen(false)} className="flex-1 py-4 bg-gray-100 rounded-xl font-bold text-gray-600 hover:bg-gray-200">戻る</button>
+                        <button onClick={addToCart} className="flex-1 py-4 bg-[#1a1a1a] text-white rounded-xl font-bold shadow-lg hover:bg-black">決定</button>
+                      </div>
                   </div>
-                  <div className="bg-gray-100 p-3 rounded mb-4 text-right text-3xl font-mono font-bold">{calcValue}</div>
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    {[7,8,9,4,5,6,1,2,3,0,'.'].map(n => <button key={n} onClick={()=>handleCalcInput(n.toString())} className="p-3 bg-white border rounded font-bold text-lg active:bg-gray-100">{n}</button>)}
-                    <button onClick={()=>setCalcValue('0')} className="p-3 bg-red-50 text-red-600 border border-red-100 rounded font-bold">C</button>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={()=>setCalcModalOpen(false)} className="flex-1 py-3 bg-gray-200 rounded font-bold">戻る</button>
-                    <button onClick={addToCart} className="flex-1 py-3 bg-[#D32F2F] text-white rounded font-bold">決定</button>
-                  </div>
-               </div>
-            </div>
-          )}
+                </div>
+              )}
+          </div>
         </div>
       )}
 
       {/* Login Modal */}
       {loginModalOpen && (
         <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm relative">
-            <button onClick={() => setLoginModalOpen(false)} className="absolute top-4 right-4"><IconX /></button>
-            <h3 className="text-xl font-bold text-center mb-6">パートナーログイン</h3>
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm relative">
+            <button onClick={() => setLoginModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-black"><IconX /></button>
+            <h3 className="text-xl font-black text-center mb-2">PARTNER LOGIN</h3>
+            <p className="text-xs text-center text-gray-400 mb-8">登録済みのパートナーIDを入力してください</p>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-gray-500">ログインID</label>
-                <input type="text" className="w-full p-3 border rounded bg-gray-50" value={loginId} onChange={e=>setLoginId(e.target.value)} />
+                <label className="text-xs font-bold text-gray-500 ml-1">ID</label>
+                <input type="text" className="w-full p-4 border border-gray-200 rounded-xl bg-gray-50 focus:border-black outline-none transition-colors" value={loginId} onChange={e=>setLoginId(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-500">パスワード</label>
-                <input type="password" className="w-full p-3 border rounded bg-gray-50" value={loginPw} onChange={e=>setLoginPw(e.target.value)} />
+                <label className="text-xs font-bold text-gray-500 ml-1">PASSWORD</label>
+                <input type="password" className="w-full p-4 border border-gray-200 rounded-xl bg-gray-50 focus:border-black outline-none transition-colors" value={loginPw} onChange={e=>setLoginPw(e.target.value)} />
               </div>
-              <button onClick={handleLogin} disabled={isLoggingIn} className="w-full bg-[#1a1a1a] text-white py-3 rounded font-bold disabled:opacity-50 hover:bg-black transition-colors">{isLoggingIn ? '確認中...' : 'ログイン'}</button>
+              <button onClick={handleLogin} className="w-full bg-[#1a1a1a] text-white py-4 rounded-xl font-bold hover:bg-black transition-colors shadow-lg mt-4">ログイン</button>
             </div>
           </div>
         </div>
