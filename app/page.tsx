@@ -5,11 +5,15 @@
 import React, { useState, useEffect } from 'react';
 
 // ==========================================
-//  設定・データ定義
+//  【設定】 GAS APIのエンドポイント
+//   ※Step 0で動作確認したURLであることを確認してください
 // ==========================================
 const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec";
 
-// 2026年のリアルな銅建値データ
+
+// ==========================================
+//  定数データ (History, FAQ, Ranks)
+// ==========================================
 const REAL_HISTORY_2026 = [
   { date: '1/4', value: 2050 }, { date: '1/6', value: 2150 },
   { date: '1/8', value: 2110 }, { date: '1/13', value: 2190 },
@@ -31,7 +35,9 @@ const RANKS = [
   { id: 'VIP', name: 'プラチナ', bonus: 50, color: 'text-amber-500', bg: 'bg-amber-50', icon: '👑' },
 ];
 
-// --- Icons ---
+// ==========================================
+//  アイコン・サブコンポーネント (エラー回避のため上に配置)
+// ==========================================
 const IconChart = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>;
 const IconArrowUp = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>;
 const IconLock = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
@@ -42,18 +48,16 @@ const IconChevronDown = ({className}) => <svg xmlns="http://www.w3.org/2000/svg"
 const IconTruck = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
 const IconZap = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
 const IconShield = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>;
-const IconCpu = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>;
 const IconFactory = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M17 18h1"></path><path d="M12 18h1"></path><path d="M7 18h1"></path></svg>;
 const IconMapPin = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
 const IconSearch = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
 const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
 const IconCamera = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>;
 
-// --- Interactive Chart Component ---
+// --- Chart Component ---
 const RealChart = ({ data, color = "#ef4444" }) => {
   const [activePoint, setActivePoint] = useState(null);
   if (!data || data.length === 0) return null;
-  
   const maxVal = Math.max(...data.map(d => d.value));
   const minVal = Math.min(...data.map(d => d.value));
   const padding = (maxVal - minVal) * 0.2; 
@@ -106,6 +110,115 @@ const RealChart = ({ data, color = "#ef4444" }) => {
    );
 };
 
+// --- AI Camera Modal Component (ここに定義) ---
+const AICameraModal = ({ isOpen, onClose, onResult }) => {
+  const [image, setImage] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [result, setResult] = useState(null);
+
+  if (!isOpen) return null;
+
+  const handleCapture = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result);
+        runAnalysis(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const runAnalysis = async (base64Str) => {
+    setAnalyzing(true);
+    const rawBase64 = base64Str.replace(/^data:image\/\w+;base64,/, "");
+
+    try {
+      const res = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'analyze_image', image: rawBase64 })
+      });
+      const data = await res.json();
+      
+      if (data.error) {
+        alert("解析エラー: " + data.error);
+        setResult(null);
+      } else {
+        setResult(data);
+        if(onResult) onResult(data);
+      }
+    } catch (e) {
+      alert("通信エラー: " + e.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const reset = () => {
+    setImage(null);
+    setResult(null);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-white/80 hover:text-white z-10 bg-black/20 rounded-full p-1"><IconX /></button>
+        <div className="bg-slate-900 text-white p-6 text-center">
+          <h3 className="text-xl font-bold flex items-center justify-center gap-2"><IconZap /> AI Scrap Appraisal</h3>
+          <p className="text-xs text-slate-400 mt-1">Gemini 1.5 Flash Powered</p>
+        </div>
+        <div className="p-6">
+          {!image ? (
+            <div className="text-center py-8">
+              <label className="cursor-pointer bg-gradient-to-r from-[#D32F2F] to-[#b71c1c] text-white font-bold py-5 px-8 rounded-full shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2 mx-auto w-full">
+                <span className="text-2xl">📷</span> カメラを起動
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
+              </label>
+              <p className="mt-4 text-xs text-slate-500">※比較対象（タバコ等）を横に置くと精度UP</p>
+            </div>
+          ) : (
+            <div>
+              <div className="relative rounded-lg overflow-hidden mb-4 border border-slate-200 bg-black">
+                <img src={image} alt="Preview" className="w-full h-64 object-contain" />
+                {analyzing && (
+                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
+                    <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <div className="text-white text-sm font-bold animate-pulse">Geminiが分析中...</div>
+                  </div>
+                )}
+              </div>
+              {result && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4 animate-in slide-in-from-bottom-4">
+                  <div className="flex justify-between items-start border-b border-green-200 pb-2 mb-2">
+                    <div>
+                      <div className="text-[10px] text-green-700 font-bold uppercase">Detected Type</div>
+                      <div className="text-lg font-black text-slate-900">{result.category}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] text-green-700 font-bold uppercase">Cu Ratio</div>
+                      <div className="text-2xl font-black text-[#D32F2F]">{result.copper_ratio_estimate}<span className="text-sm">%</span></div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-600 mb-4 bg-white/50 p-2 rounded">💡 {result.reasoning}</div>
+                  <div className="flex gap-2">
+                    <button onClick={onClose} className="flex-1 bg-slate-900 text-white py-3 rounded-lg font-bold text-sm">閉じる</button>
+                    <button onClick={reset} className="px-4 py-3 text-slate-500 text-sm underline">撮り直す</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+//  【メイン】 LandingPage コンポーネント
+//   (最後にexport defaultする)
+// ==========================================
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -131,6 +244,7 @@ export default function LandingPage() {
   const [calcValue, setCalcValue] = useState('0');
   const [calcModalOpen, setCalcModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('loading');
+  const [activeFaq, setActiveFaq] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -153,6 +267,7 @@ export default function LandingPage() {
         const history = [...REAL_HISTORY_2026];
         const lastHist = history[history.length - 1];
         if (lastHist.value !== currentPrice) {
+           // 日付生成をクライアントサイドのみで実行しハイドレーションエラー回避
            const today = new Date();
            history.push({ date: `${today.getMonth()+1}/${today.getDate()}`, value: currentPrice });
         }
@@ -193,8 +308,8 @@ export default function LandingPage() {
         setUser(data.user);
         localStorage.setItem('tsukisamu_user', JSON.stringify(data.user));
         setLoginModalOpen(false);
-      } else { alert('ID/PWが違います'); }
-    } catch (e) { alert('通信エラー'); }
+      } else { alert(data.message || 'ID/PWが違います'); }
+    } catch (e) { alert('通信エラー: ' + e.message); }
   };
 
   const handleLogout = () => {
@@ -292,7 +407,6 @@ export default function LandingPage() {
             <h2 className="text-3xl font-black mb-4">OUR SERVICE</h2>
             <p className="text-slate-500">最新鋭の設備と職人の目利きで、あらゆる廃電線を価値に変えます。</p>
           </div>
-          
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-slate-50 p-8 rounded-2xl hover:bg-slate-100 transition-all group">
               <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"><IconZap /></div>
@@ -356,10 +470,7 @@ export default function LandingPage() {
           <div className="space-y-4">
             {FAQ_ITEMS.map((item, idx) => (
               <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
-                <button 
-                  onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                  className="w-full flex justify-between items-center p-4 text-left font-bold hover:bg-gray-50"
-                >
+                <button onClick={() => setActiveFaq(activeFaq === idx ? null : idx)} className="w-full flex justify-between items-center p-4 text-left font-bold hover:bg-gray-50">
                   {item.q}
                   <IconChevronDown className={`transition-transform ${activeFaq === idx ? 'rotate-180' : ''}`} />
                 </button>
@@ -409,7 +520,7 @@ export default function LandingPage() {
           Modals
          ============================================================ */}
 
-      {/* 1. Login Modal (復活！) */}
+      {/* 1. Login Modal */}
       {loginModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white w-full max-w-md rounded-xl p-6 shadow-2xl">
@@ -420,30 +531,13 @@ export default function LandingPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">ログインID</label>
-                <input 
-                  type="text" 
-                  value={loginId}
-                  onChange={(e) => setLoginId(e.target.value)}
-                  className="w-full bg-gray-100 p-3 rounded-lg border border-transparent focus:border-black outline-none transition-all font-bold"
-                  placeholder="admin"
-                />
+                <input type="text" value={loginId} onChange={(e) => setLoginId(e.target.value)} className="w-full bg-gray-100 p-3 rounded-lg border border-transparent focus:border-black outline-none transition-all font-bold" placeholder="admin" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">パスワード</label>
-                <input 
-                  type="password" 
-                  value={loginPw}
-                  onChange={(e) => setLoginPw(e.target.value)}
-                  className="w-full bg-gray-100 p-3 rounded-lg border border-transparent focus:border-black outline-none transition-all font-bold"
-                  placeholder="••••••••"
-                />
+                <input type="password" value={loginPw} onChange={(e) => setLoginPw(e.target.value)} className="w-full bg-gray-100 p-3 rounded-lg border border-transparent focus:border-black outline-none transition-all font-bold" placeholder="••••••••" />
               </div>
-              <button 
-                onClick={handleLogin}
-                className="w-full bg-[#1a1a1a] text-white py-4 rounded-lg font-bold hover:bg-black transition-all shadow-lg mt-2"
-              >
-                認証する
-              </button>
+              <button onClick={handleLogin} className="w-full bg-[#1a1a1a] text-white py-4 rounded-lg font-bold hover:bg-black transition-all shadow-lg mt-2">認証する</button>
             </div>
           </div>
         </div>
@@ -454,12 +548,10 @@ export default function LandingPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
            <div className="bg-white w-full max-w-4xl h-[85vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row relative">
               <button onClick={()=>setIsPosOpen(false)} className="absolute top-4 right-4 text-black z-10 p-2 hover:bg-gray-100 rounded-full"><IconX /></button>
-              
               <div className="p-6 md:p-8 w-full h-full flex flex-col">
                   <h3 className="text-xl font-bold mb-4 flex items-center gap-2 flex-shrink-0"><IconCalculator /> 買取シミュレーター</h3>
-                  
                   <div className="flex flex-col md:flex-row gap-6 h-full overflow-hidden">
-                      {/* Left: Product List */}
+                      {/* Product List */}
                       <div className="w-full md:w-1/2 flex flex-col h-full overflow-hidden">
                           <div className="flex gap-2 mb-4 overflow-x-auto pb-2 flex-shrink-0">
                              {categories.map(c => (
@@ -480,67 +572,40 @@ export default function LandingPage() {
                               ))}
                           </div>
                       </div>
-                      
-                      {/* Right: Calculator & Cart */}
+                      {/* Calculator & Cart */}
                       <div className="w-full md:w-1/2 bg-gray-50 rounded-xl p-4 flex flex-col h-1/2 md:h-full">
-                          {/* Cart Items */}
                           <div className="flex-1 overflow-y-auto mb-4">
                               {cart.length === 0 ? (
-                                <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                                  <IconTruck />
-                                  <span className="text-xs mt-2">アイテムを選択してください</span>
-                                </div>
+                                <div className="h-full flex flex-col items-center justify-center text-gray-400"><IconTruck /><span className="text-xs mt-2">アイテムを選択してください</span></div>
                               ) : (
                                   <div className="space-y-2">
                                       {cart.map((item, idx) => (
                                           <div key={idx} className="bg-white p-3 rounded shadow-sm text-xs flex justify-between items-center animate-in slide-in-from-bottom-2">
-                                              <div>
-                                                <div className="font-bold">{item.name}</div>
-                                                <div className="text-gray-500">{item.weight}kg × @{item.unit}</div>
-                                              </div>
+                                              <div><div className="font-bold">{item.name}</div><div className="text-gray-500">{item.weight}kg × @{item.unit}</div></div>
                                               <div className="font-bold text-lg">¥{item.subtotal.toLocaleString()}</div>
                                           </div>
                                       ))}
                                   </div>
                               )}
                           </div>
-                          {/* Total */}
                           <div className="border-t border-gray-200 pt-4 mt-auto">
-                              <div className="flex justify-between items-end mb-2">
-                                  <div className="text-xs text-gray-500 font-bold">買取総額</div>
-                                  <div className="text-3xl font-black text-[#D32F2F] leading-none">¥{subTotal.toLocaleString()}</div>
-                              </div>
-                              <div className="flex justify-between items-center text-[10px] text-gray-400 bg-white p-2 rounded border border-gray-100">
-                                  <div>総重量: {totalWeight}kg</div>
-                                  <div>推定利益(時給): <span className="font-bold text-slate-600">¥{hourlyWage.toLocaleString()}</span></div>
-                              </div>
-                              {cart.length > 0 && (
-                                <button className="w-full bg-[#D32F2F] text-white font-bold py-3 rounded-lg mt-3 shadow-lg hover:bg-[#b71c1c] transition-colors">
-                                  買取明細を発行する
-                                </button>
-                              )}
+                              <div className="flex justify-between items-end mb-2"><div className="text-xs text-gray-500 font-bold">買取総額</div><div className="text-3xl font-black text-[#D32F2F] leading-none">¥{subTotal.toLocaleString()}</div></div>
+                              <div className="flex justify-between items-center text-[10px] text-gray-400 bg-white p-2 rounded border border-gray-100"><div>総重量: {totalWeight}kg</div><div>推定利益(時給): <span className="font-bold text-slate-600">¥{hourlyWage.toLocaleString()}</span></div></div>
+                              {cart.length > 0 && (<button className="w-full bg-[#D32F2F] text-white font-bold py-3 rounded-lg mt-3 shadow-lg hover:bg-[#b71c1c] transition-colors">買取明細を発行する</button>)}
                           </div>
                       </div>
                   </div>
               </div>
            </div>
            
-           {/* Numeric Keypad Modal (Nested) */}
+           {/* Numeric Keypad Modal */}
            {calcModalOpen && selectedProduct && (
                <div className="absolute inset-0 z-50 bg-black/20 backdrop-blur-[1px] flex items-end justify-center sm:items-center">
                    <div className="bg-white w-full max-w-xs sm:rounded-2xl p-4 shadow-2xl animate-in slide-in-from-bottom-10 border border-gray-200">
-                       <div className="flex justify-between items-center mb-4">
-                           <div className="font-bold text-sm text-slate-800">{selectedProduct.name}</div>
-                           <button onClick={()=>setCalcModalOpen(false)} className="text-gray-400 hover:text-black"><IconX /></button>
-                       </div>
-                       <div className="bg-slate-100 p-4 rounded-lg mb-4 text-right border-2 border-transparent focus-within:border-[#D32F2F] transition-colors">
-                           <div className="text-xs text-slate-500 font-bold mb-1">重量入力 (kg)</div>
-                           <div className="text-4xl font-black tracking-widest text-slate-900">{calcValue}</div>
-                       </div>
+                       <div className="flex justify-between items-center mb-4"><div className="font-bold text-sm text-slate-800">{selectedProduct.name}</div><button onClick={()=>setCalcModalOpen(false)} className="text-gray-400 hover:text-black"><IconX /></button></div>
+                       <div className="bg-slate-100 p-4 rounded-lg mb-4 text-right border-2 border-transparent focus-within:border-[#D32F2F] transition-colors"><div className="text-xs text-slate-500 font-bold mb-1">重量入力 (kg)</div><div className="text-4xl font-black tracking-widest text-slate-900">{calcValue}</div></div>
                        <div className="grid grid-cols-3 gap-2 mb-4">
-                           {[7,8,9,4,5,6,1,2,3,0,'.'].map(n => (
-                               <button key={n} onClick={()=>handleCalcInput(String(n))} className="py-4 bg-white border border-gray-200 rounded-lg text-xl font-bold active:bg-gray-100 hover:shadow-sm transition-all text-slate-700">{n}</button>
-                           ))}
+                           {[7,8,9,4,5,6,1,2,3,0,'.'].map(n => (<button key={n} onClick={()=>handleCalcInput(String(n))} className="py-4 bg-white border border-gray-200 rounded-lg text-xl font-bold active:bg-gray-100 hover:shadow-sm transition-all text-slate-700">{n}</button>))}
                            <button onClick={()=>setCalcValue('0')} className="py-4 bg-red-50 text-red-500 border border-red-100 rounded-lg font-bold active:bg-red-100">C</button>
                        </div>
                        <button onClick={addToCart} className="w-full bg-[#1a1a1a] text-white py-4 rounded-lg font-bold text-lg hover:bg-black transition-colors shadow-lg">確定する</button>
@@ -554,31 +619,11 @@ export default function LandingPage() {
       {isCrmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white w-full max-w-2xl max-h-[80vh] rounded-xl p-6 shadow-2xl flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-               <h3 className="text-xl font-bold flex items-center gap-2"><IconMapPin /> 営業ターゲットリスト</h3>
-               <button onClick={()=>setIsCrmOpen(false)}><IconX /></button>
-            </div>
+            <div className="flex justify-between items-center mb-4"><h3 className="text-xl font-bold flex items-center gap-2"><IconMapPin /> 営業ターゲットリスト</h3><button onClick={()=>setIsCrmOpen(false)}><IconX /></button></div>
             <div className="flex-1 overflow-y-auto">
                <table className="w-full text-sm text-left">
-                 <thead className="text-xs text-gray-500 uppercase bg-gray-50 sticky top-0">
-                   <tr>
-                     <th className="px-4 py-3">優先度</th>
-                     <th className="px-4 py-3">顧客名</th>
-                     <th className="px-4 py-3">住所/メモ</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   {crmData.map((target, i) => (
-                     <tr key={i} className="border-b hover:bg-gray-50">
-                       <td className="px-4 py-3 font-bold text-center">{target.priority}</td>
-                       <td className="px-4 py-3 font-bold">{target.name}</td>
-                       <td className="px-4 py-3 text-gray-500">
-                         <div>{target.address}</div>
-                         <div className="text-xs text-blue-500">{target.memo}</div>
-                       </td>
-                     </tr>
-                   ))}
-                 </tbody>
+                 <thead className="text-xs text-gray-500 uppercase bg-gray-50 sticky top-0"><tr><th className="px-4 py-3">優先度</th><th className="px-4 py-3">顧客名</th><th className="px-4 py-3">住所/メモ</th></tr></thead>
+                 <tbody>{crmData.map((target, i) => (<tr key={i} className="border-b hover:bg-gray-50"><td className="px-4 py-3 font-bold text-center">{target.priority}</td><td className="px-4 py-3 font-bold">{target.name}</td><td className="px-4 py-3 text-gray-500"><div>{target.address}</div><div className="text-xs text-blue-500">{target.memo}</div></td></tr>))}</tbody>
                </table>
                {crmData.length === 0 && <div className="text-center py-10 text-gray-400">データがありません</div>}
             </div>
@@ -587,18 +632,8 @@ export default function LandingPage() {
       )}
 
       {/* 4. AI Camera Button & Modal */}
-      <button
-        onClick={() => setIsAiModalOpen(true)}
-        className="fixed bottom-6 right-6 z-40 bg-[#1a1a1a] text-white w-16 h-16 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center border-4 border-white/20 group"
-        style={{ boxShadow: '0 10px 30px -10px rgba(0,0,0,0.6)' }}
-      >
-        <span className="text-3xl group-hover:rotate-12 transition-transform">👁️</span>
-      </button>
-
-      <AICameraModal 
-        isOpen={isAiModalOpen} 
-        onClose={() => setIsAiModalOpen(false)} 
-        onResult={(data) => {
+      <button onClick={() => setIsAiModalOpen(true)} className="fixed bottom-6 right-6 z-40 bg-[#1a1a1a] text-white w-16 h-16 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center border-4 border-white/20 group" style={{ boxShadow: '0 10px 30px -10px rgba(0,0,0,0.6)' }}><span className="text-3xl group-hover:rotate-12 transition-transform">👁️</span></button>
+      <AICameraModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} onResult={(data) => {
            console.log("AI Result:", data);
            if(data.copper_ratio_estimate) {
              alert(`AI鑑定完了: ${data.category}\n推定歩留まり: ${data.copper_ratio_estimate}%`);
@@ -608,121 +643,6 @@ export default function LandingPage() {
            }
         }} 
       />
-
     </div>
   );
 }
-
-// ==========================================
-//  AI Camera Modal Component
-// ==========================================
-const AICameraModal = ({ isOpen, onClose, onResult }) => {
-  const [image, setImage] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState(null);
-
-  if (!isOpen) return null;
-
-  const handleCapture = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result);
-        runAnalysis(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const runAnalysis = async (base64Str) => {
-    setAnalyzing(true);
-    const rawBase64 = base64Str.replace(/^data:image\/\w+;base64,/, "");
-
-    try {
-      const res = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'analyze_image', image: rawBase64 })
-      });
-      const data = await res.json();
-      
-      if (data.error) {
-        alert("解析エラー: " + data.error);
-        setResult(null);
-      } else {
-        setResult(data);
-        if(onResult) onResult(data);
-      }
-    } catch (e) {
-      alert("通信エラー: " + e.message);
-    } finally {
-      setAnalyzing(false);
-    }
-  };
-
-  const reset = () => {
-    setImage(null);
-    setResult(null);
-  };
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-white/80 hover:text-white z-10 bg-black/20 rounded-full p-1"><IconX /></button>
-        
-        <div className="bg-slate-900 text-white p-6 text-center">
-          <h3 className="text-xl font-bold flex items-center justify-center gap-2">
-            <IconZap /> AI Scrap Appraisal
-          </h3>
-          <p className="text-xs text-slate-400 mt-1">Gemini 1.5 Flash Powered</p>
-        </div>
-
-        <div className="p-6">
-          {!image ? (
-            <div className="text-center py-8">
-              <label className="cursor-pointer bg-gradient-to-r from-[#D32F2F] to-[#b71c1c] text-white font-bold py-5 px-8 rounded-full shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2 mx-auto w-full">
-                <span className="text-2xl">📷</span> カメラを起動
-                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
-              </label>
-              <p className="mt-4 text-xs text-slate-500">※比較対象（タバコ等）を横に置くと精度UP</p>
-            </div>
-          ) : (
-            <div>
-              <div className="relative rounded-lg overflow-hidden mb-4 border border-slate-200 bg-black">
-                <img src={image} alt="Preview" className="w-full h-64 object-contain" />
-                {analyzing && (
-                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
-                    <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin mb-2"></div>
-                    <div className="text-white text-sm font-bold animate-pulse">Geminiが分析中...</div>
-                  </div>
-                )}
-              </div>
-
-              {result && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4 animate-in slide-in-from-bottom-4">
-                  <div className="flex justify-between items-start border-b border-green-200 pb-2 mb-2">
-                    <div>
-                      <div className="text-[10px] text-green-700 font-bold uppercase">Detected Type</div>
-                      <div className="text-lg font-black text-slate-900">{result.category}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[10px] text-green-700 font-bold uppercase">Cu Ratio</div>
-                      <div className="text-2xl font-black text-[#D32F2F]">{result.copper_ratio_estimate}<span className="text-sm">%</span></div>
-                    </div>
-                  </div>
-                  <div className="text-xs text-slate-600 mb-4 bg-white/50 p-2 rounded">
-                    💡 {result.reasoning}
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={onClose} className="flex-1 bg-slate-900 text-white py-3 rounded-lg font-bold text-sm">閉じる</button>
-                    <button onClick={reset} className="px-4 py-3 text-slate-500 text-sm underline">撮り直す</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
