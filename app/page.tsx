@@ -558,3 +558,120 @@ export default function LandingPage() {
     </div>
   );
 }
+
+// ==========================================
+//  AI Camera Modal Component
+//  (これをファイルの末尾に追加してください)
+// ==========================================
+const AICameraModal = ({ isOpen, onClose, onResult }) => {
+  const [image, setImage] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [result, setResult] = useState(null);
+
+  if (!isOpen) return null;
+
+  const handleCapture = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result);
+        runAnalysis(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const runAnalysis = async (base64Str) => {
+    setAnalyzing(true);
+    // "data:image/jpeg;base64," の部分を除去して送信
+    const rawBase64 = base64Str.replace(/^data:image\/\w+;base64,/, "");
+
+    try {
+      const res = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'analyze_image', image: rawBase64 })
+      });
+      const data = await res.json();
+      
+      if (data.error) {
+        alert("解析エラー: " + data.error);
+        setResult(null);
+      } else {
+        setResult(data);
+        if(onResult) onResult(data);
+      }
+    } catch (e) {
+      alert("通信エラー");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const reset = () => {
+    setImage(null);
+    setResult(null);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-white/80 hover:text-white z-10 bg-black/20 rounded-full p-1"><IconX /></button>
+        
+        {/* Header Area */}
+        <div className="bg-slate-900 text-white p-6 text-center">
+          <h3 className="text-xl font-bold flex items-center justify-center gap-2">
+            <IconZap /> AI Scrap Appraisal
+          </h3>
+          <p className="text-xs text-slate-400 mt-1">Gemini 1.5 Flash Powered</p>
+        </div>
+
+        <div className="p-6">
+          {!image ? (
+            <div className="text-center py-8">
+              <label className="cursor-pointer bg-gradient-to-r from-[#D32F2F] to-[#b71c1c] text-white font-bold py-5 px-8 rounded-full shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2 mx-auto w-full">
+                <span className="text-2xl">📷</span> カメラを起動して査定
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
+              </label>
+              <p className="mt-4 text-xs text-slate-500">※比較対象（タバコ等）を横に置くと精度UP</p>
+            </div>
+          ) : (
+            <div>
+              <div className="relative rounded-lg overflow-hidden mb-4 border border-slate-200">
+                <img src={image} alt="Preview" className="w-full h-48 object-cover" />
+                {analyzing && (
+                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
+                    <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <div className="text-white text-sm font-bold animate-pulse">Analyzing...</div>
+                  </div>
+                )}
+              </div>
+
+              {result && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4 animate-in slide-in-from-bottom-4">
+                  <div className="flex justify-between items-start border-b border-green-200 pb-2 mb-2">
+                    <div>
+                      <div className="text-[10px] text-green-700 font-bold uppercase">Detected Type</div>
+                      <div className="text-lg font-black text-slate-900">{result.category}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] text-green-700 font-bold uppercase">Cu Ratio</div>
+                      <div className="text-2xl font-black text-[#D32F2F]">{result.copper_ratio_estimate}<span className="text-sm">%</span></div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-600 mb-4">
+                    💡 {result.reasoning}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={onClose} className="flex-1 bg-slate-900 text-white py-3 rounded-lg font-bold text-sm">閉じる</button>
+                    <button onClick={reset} className="px-4 py-3 text-slate-500 text-sm underline">再撮影</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
