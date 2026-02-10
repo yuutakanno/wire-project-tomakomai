@@ -6,7 +6,7 @@ import { Camera, Search, FileText, TrendingUp, Users, Package, RefreshCw, Chevro
 // ==========================================
 // 【設定】 GASのウェブアプリURLをここに貼り付け
 // ==========================================
-const GAS_API_URL = "https://script.google.com/macros/s/YOUR_GAS_DEPLOY_ID/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec";
 
 // --- 型定義 ---
 interface Product {
