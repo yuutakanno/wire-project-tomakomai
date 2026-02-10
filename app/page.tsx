@@ -34,7 +34,7 @@ export default function TomakomaiDashboard() {
   const [cart, setCart] = useState<{ product: Product, weight: number }[]>([]);
   const [view, setView] = useState<'simulator' | 'inventory' | 'crm'>('simulator');
 
-  // --- データ取得 ---
+// --- データ取得 (修正版: 安全装置付き) ---
   useEffect(() => {
     async function init() {
       try {
@@ -42,10 +42,20 @@ export default function TomakomaiDashboard() {
           fetch(`${GAS_API_URL}?action=get_products`).then(r => r.json()),
           fetch(`${GAS_API_URL}?action=get_config`).then(r => r.json())
         ]);
+
+        // 製品リストのセット
         setProducts(prodRes.products || []);
-        setConfig({ price: confRes.price, lastUpdate: confRes.description });
+
+        // 設定のセット (ここが修正ポイント: || 0 を追加してundefinedを防ぐ)
+        setConfig({ 
+          price: Number(confRes.price) || 0, 
+          lastUpdate: confRes.description || "" 
+        });
+
       } catch (e) {
         console.error("Data fetch failed", e);
+        // エラー時はとりあえず0円で表示を維持
+        setConfig({ price: 0, lastUpdate: "Error" });
       } finally {
         setLoading(false);
       }
