@@ -6,13 +6,12 @@ import React, { useState, useEffect } from 'react';
 
 // ==========================================
 //  【設定】 GAS APIのエンドポイント
-//   ※Step 0で動作確認したURLであることを確認してください
 // ==========================================
 const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec";
 
 
 // ==========================================
-//  定数データ (History, FAQ, Ranks)
+//  定数データ
 // ==========================================
 const REAL_HISTORY_2026 = [
   { date: '1/4', value: 2050 }, { date: '1/6', value: 2150 },
@@ -36,7 +35,7 @@ const RANKS = [
 ];
 
 // ==========================================
-//  アイコン・サブコンポーネント (エラー回避のため上に配置)
+//  アイコン・サブコンポーネント
 // ==========================================
 const IconChart = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>;
 const IconArrowUp = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>;
@@ -336,6 +335,26 @@ export default function LandingPage() {
     setCalcValue(prev => prev === '0' && v !== '.' ? v : prev + v);
   };
 
+  // ★追加機能: 買取明細発行 (Checkout)
+  const handleCheckout = () => {
+    if (cart.length === 0) return;
+    
+    const total = cart.reduce((a, b) => a + b.subtotal, 0);
+    const weight = cart.reduce((a, b) => a + b.weight, 0);
+    
+    // シンプルな確認ダイアログ
+    if (!confirm(`買取明細を発行しますか？\n\n総重量: ${weight}kg\n買取総額: ¥${total.toLocaleString()}`)) {
+      return;
+    }
+
+    // 本来はここでGASにトランザクションデータを送信しますが、今回はDemoとしてアラートのみ
+    alert(`【発行完了】\n\n${new Date().toLocaleString()}\n取引ID: TRX-${Date.now()}\n\nご利用ありがとうございました。`);
+    
+    // カートを空にしてPOSを閉じる
+    setCart([]);
+    setIsPosOpen(false);
+  };
+
   const subTotal = cart.reduce((a,b) => a + b.subtotal, 0);
   const totalProfit = cart.reduce((a,b) => a + (b.grossProfit || 0), 0);
   const totalWeight = cart.reduce((a,b) => a + b.weight, 0);
@@ -591,7 +610,12 @@ export default function LandingPage() {
                           <div className="border-t border-gray-200 pt-4 mt-auto">
                               <div className="flex justify-between items-end mb-2"><div className="text-xs text-gray-500 font-bold">買取総額</div><div className="text-3xl font-black text-[#D32F2F] leading-none">¥{subTotal.toLocaleString()}</div></div>
                               <div className="flex justify-between items-center text-[10px] text-gray-400 bg-white p-2 rounded border border-gray-100"><div>総重量: {totalWeight}kg</div><div>推定利益(時給): <span className="font-bold text-slate-600">¥{hourlyWage.toLocaleString()}</span></div></div>
-                              {cart.length > 0 && (<button className="w-full bg-[#D32F2F] text-white font-bold py-3 rounded-lg mt-3 shadow-lg hover:bg-[#b71c1c] transition-colors">買取明細を発行する</button>)}
+                              {cart.length > 0 && (
+                                  // ★クリックイベントを修正済み
+                                  <button onClick={handleCheckout} className="w-full bg-[#D32F2F] text-white font-bold py-3 rounded-lg mt-3 shadow-lg hover:bg-[#b71c1c] transition-colors">
+                                    買取明細を発行する
+                                  </button>
+                              )}
                           </div>
                       </div>
                   </div>
