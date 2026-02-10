@@ -7,7 +7,6 @@ import React, { useState, useEffect } from 'react';
 // ==========================================
 //  設定・データ定義
 // ==========================================
-// ★更新済み: 新しいGASのエンドポイント
 const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec";
 
 // 2026年のリアルな銅建値データ
@@ -48,14 +47,11 @@ const IconFactory = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width
 const IconMapPin = ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
 const IconSearch = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
 const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
-// ★追加: カメラアイコン
 const IconCamera = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>;
-
 
 // --- Interactive Chart Component ---
 const RealChart = ({ data, color = "#ef4444" }) => {
   const [activePoint, setActivePoint] = useState(null);
-  
   if (!data || data.length === 0) return null;
   
   const maxVal = Math.max(...data.map(d => d.value));
@@ -64,10 +60,8 @@ const RealChart = ({ data, color = "#ef4444" }) => {
   const yMax = maxVal + padding;
   const yMin = minVal - padding;
   const yRange = yMax - yMin;
-  
   const width = 100;
   const height = 100;
-
   const getX = (index) => (index / (data.length - 1)) * width;
   const getY = (value) => height - ((value - yMin) / yRange) * height;
   const points = data.map((d, i) => `${getX(i)},${getY(d.value)}`).join(' ');
@@ -76,22 +70,14 @@ const RealChart = ({ data, color = "#ef4444" }) => {
     <div className="w-full relative select-none" onMouseLeave={() => setActivePoint(null)}>
        <div className="flex justify-between items-end mb-4 px-2">
            <div>
-             <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-               {activePoint ? activePoint.date : 'Current Price'}
-             </div>
-             <div className="text-3xl font-black text-white flex items-center gap-2">
-               ¥{activePoint ? activePoint.value.toLocaleString() : data[data.length-1].value.toLocaleString()} 
-               <span className="text-sm font-normal text-slate-500">/kg</span>
-             </div>
+             <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{activePoint ? activePoint.date : 'Current Price'}</div>
+             <div className="text-3xl font-black text-white flex items-center gap-2">¥{activePoint ? activePoint.value.toLocaleString() : data[data.length-1].value.toLocaleString()} <span className="text-sm font-normal text-slate-500">/kg</span></div>
            </div>
            <div className="text-right">
-              <div className="text-green-400 text-xs font-bold flex items-center justify-end gap-1 mb-1">
-                <IconArrowUp /> 日足 (Daily)
-              </div>
+              <div className="text-green-400 text-xs font-bold flex items-center justify-end gap-1 mb-1"><IconArrowUp /> 日足 (Daily)</div>
               <div className="text-[10px] text-slate-500">JX金属建値連動</div>
            </div>
         </div>
-
         <div className="h-48 w-full relative border-l border-b border-slate-700/50 bg-slate-800/20 rounded-lg overflow-hidden">
            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
              <defs>
@@ -100,9 +86,7 @@ const RealChart = ({ data, color = "#ef4444" }) => {
                  <stop offset="100%" stopColor={color} stopOpacity="0" />
                </linearGradient>
              </defs>
-             {[0.25, 0.5, 0.75].map(p => (
-               <line key={p} x1="0" y1={height * p} x2={width} y2={height * p} stroke="#334155" strokeWidth="0.2" strokeDasharray="1" />
-             ))}
+             {[0.25, 0.5, 0.75].map(p => (<line key={p} x1="0" y1={height * p} x2={width} y2={height * p} stroke="#334155" strokeWidth="0.2" strokeDasharray="1" />))}
              <path d={`M ${points} L ${width},${height} L 0,${height} Z`} fill="url(#gradient)" stroke="none" />
              <path d={`M${points}`} fill="none" stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
              {data.map((d, i) => (
@@ -125,23 +109,21 @@ const RealChart = ({ data, color = "#ef4444" }) => {
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // ★追加: AIモーダルの開閉スイッチ
   const [isAiModalOpen, setIsAiModalOpen] = useState(false); 
   
-  // System Data
+  // Data
   const [marketPrice, setMarketPrice] = useState(0); 
   const [chartData, setChartData] = useState([]); 
   const [products, setProducts] = useState([]);
   const [crmData, setCrmData] = useState([]);
   
-  // User Data
+  // User
   const [user, setUser] = useState(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [loginId, setLoginId] = useState('');
   const [loginPw, setLoginPw] = useState('');
   
-  // UI State
+  // UI
   const [isPosOpen, setIsPosOpen] = useState(false);
   const [isCrmOpen, setIsCrmOpen] = useState(false);
   const [cart, setCart] = useState([]);
@@ -149,8 +131,6 @@ export default function LandingPage() {
   const [calcValue, setCalcValue] = useState('0');
   const [calcModalOpen, setCalcModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('loading');
-  const [activeFaq, setActiveFaq] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -162,7 +142,6 @@ export default function LandingPage() {
             fetch(`${API_ENDPOINT}?action=get_market_price`).catch(e => null),
             fetch(`${API_ENDPOINT}?action=get_products`).catch(e => null)
         ]);
-
         let currentPrice = 2100; 
         if (priceRes && priceRes.ok) {
           const data = await priceRes.json();
@@ -171,7 +150,6 @@ export default function LandingPage() {
             setMarketPrice(currentPrice);
           }
         }
-
         const history = [...REAL_HISTORY_2026];
         const lastHist = history[history.length - 1];
         if (lastHist.value !== currentPrice) {
@@ -179,7 +157,6 @@ export default function LandingPage() {
            history.push({ date: `${today.getMonth()+1}/${today.getDate()}`, value: currentPrice });
         }
         setChartData(history);
-
         if (productRes && productRes.ok) {
             const pData = await productRes.json();
             if (pData && pData.products) {
@@ -193,7 +170,6 @@ export default function LandingPage() {
         }
       } catch (e) { console.warn("Fetch Error", e); }
     };
-
     fetchSystemData();
     const storedUser = localStorage.getItem('tsukisamu_user');
     if (storedUser) setUser(JSON.parse(storedUser));
@@ -250,7 +226,6 @@ export default function LandingPage() {
   const totalWeight = cart.reduce((a,b) => a + b.weight, 0);
   const estimatedHours = totalWeight / 20; 
   const hourlyWage = estimatedHours > 0 ? Math.floor(totalProfit / estimatedHours) : 0;
-
   const categories = Array.from(new Set(products.map(p => p.category))).sort();
 
   return (
@@ -289,7 +264,6 @@ export default function LandingPage() {
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-4 bg-slate-900 text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1565610261709-5c5697d74556?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-20"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/90 to-transparent"></div>
-        
         <div className="container mx-auto relative z-10 grid md:grid-cols-2 gap-12 items-center">
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
             <div className="inline-block px-3 py-1 bg-[#D32F2F]/20 text-[#D32F2F] border border-[#D32F2F]/50 rounded-full text-xs font-bold mb-6 tracking-wider">SINCE 1961</div>
@@ -311,36 +285,196 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Main Service (Recycling) - Placeholder to keep structure */}
+      {/* Main Content: Recycling Service Overview */}
       <section id="recycle" className="py-20 bg-white">
         <div className="container mx-auto px-4">
-             {/* 既存のコンテンツがある場所 (省略) */}
-             <div className="text-center text-slate-400 py-10">...Main Contents...</div>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-black mb-4">OUR SERVICE</h2>
+            <p className="text-slate-500">最新鋭の設備と職人の目利きで、あらゆる廃電線を価値に変えます。</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-slate-50 p-8 rounded-2xl hover:bg-slate-100 transition-all group">
+              <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"><IconZap /></div>
+              <h3 className="text-xl font-bold mb-3">廃電線買取</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">IV線、CVTケーブル、通信線など、あらゆる種類の電線を高価買取。被覆がついたままでOKです。</p>
+            </div>
+            <div className="bg-slate-50 p-8 rounded-2xl hover:bg-slate-100 transition-all group">
+              <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"><IconFactory /></div>
+              <h3 className="text-xl font-bold mb-3">ナゲット加工</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">自社工場内のナゲットプラントで、被覆と銅を99.9%の純度で分離。環境負荷を最小限に抑えます。</p>
+            </div>
+            <div className="bg-slate-50 p-8 rounded-2xl hover:bg-slate-100 transition-all group">
+               <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"><IconTruck /></div>
+              <h3 className="text-xl font-bold mb-3">出張引取</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">大口のお客様には、専用トラックでの出張引取も対応。現場から直接、苫小牧工場へ搬入可能です。</p>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* POS Modal */}
+      {/* Rank System */}
+      <section id="rank" className="py-20 bg-slate-900 text-white">
+        <div className="container mx-auto px-4">
+           <div className="grid md:grid-cols-2 gap-12 items-center">
+             <div>
+               <h2 className="text-3xl font-black mb-6">MEMBERSHIP</h2>
+               <p className="text-slate-400 mb-8 leading-relaxed">
+                 取引量に応じたランク制度を導入。<br/>
+                 使えば使うほど、買取単価が自動的にアップします。
+               </p>
+               <div className="space-y-4">
+                 {RANKS.map(rank => (
+                   <div key={rank.id} className="flex items-center gap-4 bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                     <div className="text-2xl">{rank.icon}</div>
+                     <div>
+                       <div className="font-bold">{rank.name}</div>
+                       <div className="text-xs text-slate-400">ボーナス: <span className="text-green-400">+{rank.bonus}円/kg</span></div>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             </div>
+             <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-2xl border border-slate-700 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-32 bg-[#D32F2F] opacity-10 blur-[80px] rounded-full"></div>
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><IconCheck /> 法人契約のメリット</h3>
+                <ul className="space-y-4 text-slate-300 text-sm">
+                  <li className="flex gap-2"><IconCheck /> 専属担当者による優先対応</li>
+                  <li className="flex gap-2"><IconCheck /> 請求書払い（掛け売り）対応</li>
+                  <li className="flex gap-2"><IconCheck /> 産業廃棄物管理票（マニフェスト）発行</li>
+                </ul>
+                <button onClick={()=>setLoginModalOpen(true)} className="mt-8 w-full bg-white text-slate-900 font-bold py-3 rounded hover:bg-gray-100 transition-colors">パートナー登録 / ログイン</button>
+             </div>
+           </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <h2 className="text-3xl font-black text-center mb-12">FAQ</h2>
+          <div className="space-y-4">
+            {FAQ_ITEMS.map((item, idx) => (
+              <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
+                <button 
+                  onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                  className="w-full flex justify-between items-center p-4 text-left font-bold hover:bg-gray-50"
+                >
+                  {item.q}
+                  <IconChevronDown className={`transition-transform ${activeFaq === idx ? 'rotate-180' : ''}`} />
+                </button>
+                {activeFaq === idx && (
+                  <div className="p-4 bg-gray-50 text-sm text-gray-600 border-t border-gray-200 animate-in slide-in-from-top-2">
+                    {item.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* About / Footer */}
+      <footer id="about" className="bg-[#1a1a1a] text-gray-400 py-12 border-t border-gray-800">
+        <div className="container mx-auto px-4 grid md:grid-cols-4 gap-8 text-sm">
+          <div className="col-span-1 md:col-span-2">
+            <h4 className="text-white font-bold text-lg mb-4">株式会社 月寒製作所</h4>
+            <p className="mb-4">北海道苫小牧市勇払123-4<br/>TEL: 0144-XX-XXXX</p>
+            <p className="text-xs">
+              古物商許可証: 北海道公安委員会 第123456789号<br/>
+              産業廃棄物収集運搬業許可: 第0000000号
+            </p>
+          </div>
+          <div>
+            <h4 className="text-white font-bold mb-4">LINKS</h4>
+            <ul className="space-y-2">
+              <li><a href="#" className="hover:text-white">ホーム</a></li>
+              <li><a href="#" className="hover:text-white">買取価格一覧</a></li>
+              <li><a href="#" className="hover:text-white">持ち込み予約</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-white font-bold mb-4">ACCESS</h4>
+            <div className="w-full h-32 bg-gray-800 rounded flex items-center justify-center text-xs">
+              Google Map Loading...
+            </div>
+          </div>
+        </div>
+        <div className="text-center text-xs mt-12 pt-8 border-t border-gray-800">
+          &copy; 2026 TSUKISAMU FACTORY. All Rights Reserved.
+        </div>
+      </footer>
+
+      {/* ============================================================
+          Modals
+         ============================================================ */}
+
+      {/* 1. Login Modal (復活！) */}
+      {loginModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-md rounded-xl p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-slate-900">パートナーログイン</h3>
+              <button onClick={() => setLoginModalOpen(false)} className="text-gray-400 hover:text-black"><IconX /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">ログインID</label>
+                <input 
+                  type="text" 
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
+                  className="w-full bg-gray-100 p-3 rounded-lg border border-transparent focus:border-black outline-none transition-all font-bold"
+                  placeholder="admin"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">パスワード</label>
+                <input 
+                  type="password" 
+                  value={loginPw}
+                  onChange={(e) => setLoginPw(e.target.value)}
+                  className="w-full bg-gray-100 p-3 rounded-lg border border-transparent focus:border-black outline-none transition-all font-bold"
+                  placeholder="••••••••"
+                />
+              </div>
+              <button 
+                onClick={handleLogin}
+                className="w-full bg-[#1a1a1a] text-white py-4 rounded-lg font-bold hover:bg-black transition-all shadow-lg mt-2"
+              >
+                認証する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. POS Modal */}
       {isPosOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-           {/* 既存のPOSモーダルコードが入るところ */}
-           <div className="bg-white w-full max-w-4xl h-[80vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row">
-              <button onClick={()=>setIsPosOpen(false)} className="absolute top-4 right-4 text-black z-10"><IconX /></button>
-              <div className="p-8 w-full">
-                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><IconCalculator /> 買取シミュレーター</h3>
-                  <div className="flex gap-4 h-full">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+           <div className="bg-white w-full max-w-4xl h-[85vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row relative">
+              <button onClick={()=>setIsPosOpen(false)} className="absolute top-4 right-4 text-black z-10 p-2 hover:bg-gray-100 rounded-full"><IconX /></button>
+              
+              <div className="p-6 md:p-8 w-full h-full flex flex-col">
+                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 flex-shrink-0"><IconCalculator /> 買取シミュレーター</h3>
+                  
+                  <div className="flex flex-col md:flex-row gap-6 h-full overflow-hidden">
                       {/* Left: Product List */}
-                      <div className="w-1/2 overflow-y-auto pr-2">
-                          <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                      <div className="w-full md:w-1/2 flex flex-col h-full overflow-hidden">
+                          <div className="flex gap-2 mb-4 overflow-x-auto pb-2 flex-shrink-0">
                              {categories.map(c => (
-                                 <button key={c} onClick={()=>setActiveTab(c)} className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap ${activeTab===c ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}>{c}</button>
+                                 <button key={c} onClick={()=>setActiveTab(c)} className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${activeTab===c ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{c}</button>
                              ))}
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-2 overflow-y-auto pr-2 pb-20 md:pb-0">
                               {products.filter(p => p.category === activeTab).map(p => (
-                                  <div key={p.id} onClick={()=>{setSelectedProduct(p); setCalcModalOpen(true);}} className="p-3 border rounded hover:border-[#D32F2F] cursor-pointer group transition-all">
+                                  <div key={p.id} onClick={()=>{setSelectedProduct(p); setCalcModalOpen(true);}} className="p-3 border rounded-lg hover:border-[#D32F2F] hover:bg-red-50 cursor-pointer group transition-all">
                                       <div className="flex justify-between items-center">
-                                          <div className="font-bold text-sm">{p.name} <span className="text-xs font-normal text-gray-500 ml-1">{p.sq}sq</span></div>
-                                          <div className="text-[#D32F2F] font-bold text-sm">{p.ratio}%</div>
+                                          <div>
+                                            <div className="font-bold text-sm text-slate-800">{p.name}</div>
+                                            <div className="text-xs text-gray-500">{p.sq !== '-' ? p.sq + 'sq' : ''}</div>
+                                          </div>
+                                          <div className="text-[#D32F2F] font-bold text-sm bg-white px-2 py-1 rounded border border-red-100">{p.ratio}%</div>
                                       </div>
                                   </div>
                               ))}
@@ -348,30 +482,43 @@ export default function LandingPage() {
                       </div>
                       
                       {/* Right: Calculator & Cart */}
-                      <div className="w-1/2 bg-gray-50 rounded-xl p-4 flex flex-col">
+                      <div className="w-full md:w-1/2 bg-gray-50 rounded-xl p-4 flex flex-col h-1/2 md:h-full">
                           {/* Cart Items */}
                           <div className="flex-1 overflow-y-auto mb-4">
-                              {cart.length === 0 ? <div className="text-center text-gray-400 text-xs mt-10">カートは空です</div> : (
+                              {cart.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                                  <IconTruck />
+                                  <span className="text-xs mt-2">アイテムを選択してください</span>
+                                </div>
+                              ) : (
                                   <div className="space-y-2">
                                       {cart.map((item, idx) => (
-                                          <div key={idx} className="bg-white p-2 rounded shadow-sm text-xs flex justify-between items-center">
-                                              <div>{item.name} x {item.weight}kg</div>
-                                              <div className="font-bold">¥{item.subtotal.toLocaleString()}</div>
+                                          <div key={idx} className="bg-white p-3 rounded shadow-sm text-xs flex justify-between items-center animate-in slide-in-from-bottom-2">
+                                              <div>
+                                                <div className="font-bold">{item.name}</div>
+                                                <div className="text-gray-500">{item.weight}kg × @{item.unit}</div>
+                                              </div>
+                                              <div className="font-bold text-lg">¥{item.subtotal.toLocaleString()}</div>
                                           </div>
                                       ))}
                                   </div>
                               )}
                           </div>
                           {/* Total */}
-                          <div className="border-t pt-4">
-                              <div className="flex justify-between items-end mb-1">
-                                  <div className="text-xs text-gray-500">買取総額</div>
-                                  <div className="text-2xl font-black text-[#D32F2F]">¥{subTotal.toLocaleString()}</div>
+                          <div className="border-t border-gray-200 pt-4 mt-auto">
+                              <div className="flex justify-between items-end mb-2">
+                                  <div className="text-xs text-gray-500 font-bold">買取総額</div>
+                                  <div className="text-3xl font-black text-[#D32F2F] leading-none">¥{subTotal.toLocaleString()}</div>
                               </div>
-                              <div className="flex justify-between items-center text-[10px] text-gray-400 mb-4">
+                              <div className="flex justify-between items-center text-[10px] text-gray-400 bg-white p-2 rounded border border-gray-100">
                                   <div>総重量: {totalWeight}kg</div>
-                                  <div>推定時給: ¥{hourlyWage.toLocaleString()} (利益ベース)</div>
+                                  <div>推定利益(時給): <span className="font-bold text-slate-600">¥{hourlyWage.toLocaleString()}</span></div>
                               </div>
+                              {cart.length > 0 && (
+                                <button className="w-full bg-[#D32F2F] text-white font-bold py-3 rounded-lg mt-3 shadow-lg hover:bg-[#b71c1c] transition-colors">
+                                  買取明細を発行する
+                                </button>
+                              )}
                           </div>
                       </div>
                   </div>
@@ -381,57 +528,83 @@ export default function LandingPage() {
            {/* Numeric Keypad Modal (Nested) */}
            {calcModalOpen && selectedProduct && (
                <div className="absolute inset-0 z-50 bg-black/20 backdrop-blur-[1px] flex items-end justify-center sm:items-center">
-                   <div className="bg-white w-full max-w-xs sm:rounded-2xl p-4 shadow-2xl animate-in slide-in-from-bottom-10">
+                   <div className="bg-white w-full max-w-xs sm:rounded-2xl p-4 shadow-2xl animate-in slide-in-from-bottom-10 border border-gray-200">
                        <div className="flex justify-between items-center mb-4">
-                           <div className="font-bold text-sm">{selectedProduct.name}</div>
-                           <button onClick={()=>setCalcModalOpen(false)}><IconX /></button>
+                           <div className="font-bold text-sm text-slate-800">{selectedProduct.name}</div>
+                           <button onClick={()=>setCalcModalOpen(false)} className="text-gray-400 hover:text-black"><IconX /></button>
                        </div>
-                       <div className="bg-gray-100 p-4 rounded-lg mb-4 text-right">
-                           <div className="text-xs text-gray-500">重量 (kg)</div>
-                           <div className="text-3xl font-black tracking-widest">{calcValue}</div>
+                       <div className="bg-slate-100 p-4 rounded-lg mb-4 text-right border-2 border-transparent focus-within:border-[#D32F2F] transition-colors">
+                           <div className="text-xs text-slate-500 font-bold mb-1">重量入力 (kg)</div>
+                           <div className="text-4xl font-black tracking-widest text-slate-900">{calcValue}</div>
                        </div>
                        <div className="grid grid-cols-3 gap-2 mb-4">
                            {[7,8,9,4,5,6,1,2,3,0,'.'].map(n => (
-                               <button key={n} onClick={()=>handleCalcInput(String(n))} className="py-4 bg-white border border-gray-200 rounded-lg text-xl font-bold active:bg-gray-100">{n}</button>
+                               <button key={n} onClick={()=>handleCalcInput(String(n))} className="py-4 bg-white border border-gray-200 rounded-lg text-xl font-bold active:bg-gray-100 hover:shadow-sm transition-all text-slate-700">{n}</button>
                            ))}
-                           <button onClick={()=>setCalcValue('0')} className="py-4 bg-red-50 text-red-500 border border-red-100 rounded-lg font-bold">C</button>
+                           <button onClick={()=>setCalcValue('0')} className="py-4 bg-red-50 text-red-500 border border-red-100 rounded-lg font-bold active:bg-red-100">C</button>
                        </div>
-                       <button onClick={addToCart} className="w-full bg-[#1a1a1a] text-white py-4 rounded-lg font-bold text-lg">確定する</button>
+                       <button onClick={addToCart} className="w-full bg-[#1a1a1a] text-white py-4 rounded-lg font-bold text-lg hover:bg-black transition-colors shadow-lg">確定する</button>
                    </div>
                </div>
            )}
         </div>
       )}
 
-      {/* ============================================================
-          ★追加: AI鑑定ボタン (右下フローティング) & モーダル本体
-         ============================================================ */}
-      
-      {/* 1. 右下に浮く「AI眼」ボタン */}
+      {/* 3. CRM Modal (簡易版) */}
+      {isCrmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-2xl max-h-[80vh] rounded-xl p-6 shadow-2xl flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+               <h3 className="text-xl font-bold flex items-center gap-2"><IconMapPin /> 営業ターゲットリスト</h3>
+               <button onClick={()=>setIsCrmOpen(false)}><IconX /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+               <table className="w-full text-sm text-left">
+                 <thead className="text-xs text-gray-500 uppercase bg-gray-50 sticky top-0">
+                   <tr>
+                     <th className="px-4 py-3">優先度</th>
+                     <th className="px-4 py-3">顧客名</th>
+                     <th className="px-4 py-3">住所/メモ</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   {crmData.map((target, i) => (
+                     <tr key={i} className="border-b hover:bg-gray-50">
+                       <td className="px-4 py-3 font-bold text-center">{target.priority}</td>
+                       <td className="px-4 py-3 font-bold">{target.name}</td>
+                       <td className="px-4 py-3 text-gray-500">
+                         <div>{target.address}</div>
+                         <div className="text-xs text-blue-500">{target.memo}</div>
+                       </td>
+                     </tr>
+                   ))}
+                 </tbody>
+               </table>
+               {crmData.length === 0 && <div className="text-center py-10 text-gray-400">データがありません</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. AI Camera Button & Modal */}
       <button
         onClick={() => setIsAiModalOpen(true)}
-        className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center border-2 border-white/20"
-        style={{ boxShadow: '0 0 20px rgba(0,0,0,0.5)' }}
+        className="fixed bottom-6 right-6 z-40 bg-[#1a1a1a] text-white w-16 h-16 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center border-4 border-white/20 group"
+        style={{ boxShadow: '0 10px 30px -10px rgba(0,0,0,0.6)' }}
       >
-        <span className="text-2xl">👁️</span>
+        <span className="text-3xl group-hover:rotate-12 transition-transform">👁️</span>
       </button>
 
-      {/* 2. AIカメラモーダル本体 */}
       <AICameraModal 
         isOpen={isAiModalOpen} 
         onClose={() => setIsAiModalOpen(false)} 
         onResult={(data) => {
            console.log("AI Result:", data);
-           
-           // AIの結果を計算機に渡すロジック
            if(data.copper_ratio_estimate) {
-             // ユーザーに見つかった品目を伝える（実際は製品リストから検索してSelectedProductに入れるのがベストですが、簡易的に通知）
              alert(`AI鑑定完了: ${data.category}\n推定歩留まり: ${data.copper_ratio_estimate}%`);
-             
-             // POSを開いて重量入力待ちにする（UX改善）
-             setCalcValue(String(data.copper_ratio_estimate)); // 仮にここに値を入れておくなどの連携が可能
-             setIsPosOpen(true); 
-             setIsAiModalOpen(false); // AI画面は閉じる
+             setCalcValue(String(data.copper_ratio_estimate));
+             setIsPosOpen(true);
+             setIsAiModalOpen(false);
            }
         }} 
       />
@@ -442,7 +615,6 @@ export default function LandingPage() {
 
 // ==========================================
 //  AI Camera Modal Component
-//  (ページ最下部に定義)
 // ==========================================
 const AICameraModal = ({ isOpen, onClose, onResult }) => {
   const [image, setImage] = useState(null);
@@ -465,7 +637,6 @@ const AICameraModal = ({ isOpen, onClose, onResult }) => {
 
   const runAnalysis = async (base64Str) => {
     setAnalyzing(true);
-    // "data:image/jpeg;base64," の部分を除去して送信
     const rawBase64 = base64Str.replace(/^data:image\/\w+;base64,/, "");
 
     try {
@@ -483,7 +654,7 @@ const AICameraModal = ({ isOpen, onClose, onResult }) => {
         if(onResult) onResult(data);
       }
     } catch (e) {
-      alert("通信エラー");
+      alert("通信エラー: " + e.message);
     } finally {
       setAnalyzing(false);
     }
@@ -495,11 +666,10 @@ const AICameraModal = ({ isOpen, onClose, onResult }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
       <div className="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl relative">
         <button onClick={onClose} className="absolute top-4 right-4 text-white/80 hover:text-white z-10 bg-black/20 rounded-full p-1"><IconX /></button>
         
-        {/* Header Area */}
         <div className="bg-slate-900 text-white p-6 text-center">
           <h3 className="text-xl font-bold flex items-center justify-center gap-2">
             <IconZap /> AI Scrap Appraisal
@@ -511,19 +681,19 @@ const AICameraModal = ({ isOpen, onClose, onResult }) => {
           {!image ? (
             <div className="text-center py-8">
               <label className="cursor-pointer bg-gradient-to-r from-[#D32F2F] to-[#b71c1c] text-white font-bold py-5 px-8 rounded-full shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2 mx-auto w-full">
-                <span className="text-2xl">📷</span> カメラを起動して査定
+                <span className="text-2xl">📷</span> カメラを起動
                 <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
               </label>
               <p className="mt-4 text-xs text-slate-500">※比較対象（タバコ等）を横に置くと精度UP</p>
             </div>
           ) : (
             <div>
-              <div className="relative rounded-lg overflow-hidden mb-4 border border-slate-200">
-                <img src={image} alt="Preview" className="w-full h-48 object-cover" />
+              <div className="relative rounded-lg overflow-hidden mb-4 border border-slate-200 bg-black">
+                <img src={image} alt="Preview" className="w-full h-64 object-contain" />
                 {analyzing && (
                   <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
                     <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin mb-2"></div>
-                    <div className="text-white text-sm font-bold animate-pulse">Analyzing...</div>
+                    <div className="text-white text-sm font-bold animate-pulse">Geminiが分析中...</div>
                   </div>
                 )}
               </div>
@@ -540,12 +710,12 @@ const AICameraModal = ({ isOpen, onClose, onResult }) => {
                       <div className="text-2xl font-black text-[#D32F2F]">{result.copper_ratio_estimate}<span className="text-sm">%</span></div>
                     </div>
                   </div>
-                  <div className="text-xs text-slate-600 mb-4">
+                  <div className="text-xs text-slate-600 mb-4 bg-white/50 p-2 rounded">
                     💡 {result.reasoning}
                   </div>
                   <div className="flex gap-2">
                     <button onClick={onClose} className="flex-1 bg-slate-900 text-white py-3 rounded-lg font-bold text-sm">閉じる</button>
-                    <button onClick={reset} className="px-4 py-3 text-slate-500 text-sm underline">再撮影</button>
+                    <button onClick={reset} className="px-4 py-3 text-slate-500 text-sm underline">撮り直す</button>
                   </div>
                 </div>
               )}
