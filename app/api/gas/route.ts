@@ -8,7 +8,7 @@ export async function GET() {
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ status: 'error', message: 'GAS GET Error' }, { status: 500 });
+    return NextResponse.json({ status: 'error', message: 'API Route Connection failed' }, { status: 500 });
   }
 }
 
@@ -23,6 +23,6 @@ export async function POST(request: Request) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ status: 'error', message: 'GAS POST Error' }, { status: 500 });
+    return NextResponse.json({ status: 'error', message: 'API Route POST Error' }, { status: 500 });
   }
 }
