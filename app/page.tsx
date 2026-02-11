@@ -1,100 +1,77 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec';
 
 export default function WireMasterCloud() {
   const [role, setRole] = useState<'GUEST' | 'MEMBER' | 'ADMIN'>('GUEST');
   const [user, setUser] = useState<any>(null);
-  const [db, setDb] = useState<any>({ config: {}, products: [] });
+  const [db, setDb] = useState<any>({ config: { market_price: '---' }, products: [] });
   const [loading, setLoading] = useState(false);
-  const [debugMsg, setDebugMsg] = useState(''); // デバッグ用表示
+
+  // 【重要】ページロード時に建値を取得
+  useEffect(() => {
+    fetch(GAS_API_URL) // doGetを叩く
+      .then(res => res.json())
+      .then(data => setDb(data))
+      .catch(e => console.error("Initial load error:", e));
+  }, []);
 
   const login = async (e: any) => {
     e.preventDefault();
     setLoading(true);
-    setDebugMsg('GASに接続中...');
-    
-    const payload = { 
-      action: 'AUTH_LOGIN', 
-      loginId: e.target.loginId.value, 
-      password: e.target.password.value 
-    };
-
     try {
-      // no-corsではエラーが拾えないため、通常のfetchでレスポンスを確認
       const res = await fetch(GAS_API_URL, {
         method: 'POST',
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ action: 'AUTH_LOGIN', loginId: e.target.loginId.value, password: e.target.password.value })
       });
-      
       const result = await res.json();
-      
       if (result.status === 'success') {
-        setDebugMsg('認証成功。初期データ取得中...');
         setUser(result.user);
-        
-        // 初期データの取得
-        const initRes = await fetch(GAS_API_URL, { 
-          method: 'POST', 
-          body: JSON.stringify({ action: 'GET_INIT_DATA' }) 
-        });
-        const initData = await initRes.json();
-        
-        setDb(initData);
         setRole(result.user.rank === 'ADMIN' ? 'ADMIN' : 'MEMBER');
-        setDebugMsg('');
       } else {
-        setDebugMsg('認証拒否: ' + result.message);
+        alert(result.message);
       }
-    } catch (err: any) {
-      setDebugMsg('通信エラー: ' + err.toString() + '。GASが「全員」に公開されているか確認してください。');
+    } catch (err) {
+      alert("通信に失敗しました。GASの公開設定を確認してください。");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans">
-      <header className="border-b px-6 py-4 flex justify-between items-center bg-white shadow-sm">
+    <div className="min-h-screen bg-white text-gray-900">
+      <header className="border-b px-6 py-4 flex justify-between items-center sticky top-0 bg-white z-50">
         <div className="font-black text-xl italic tracking-tighter">月寒製作所 <span className="text-red-600">苫小牧工場</span></div>
-        {db.config.market_price && (
-          <div className="text-right">
-            <span className="text-[10px] text-gray-400 block font-bold tracking-widest">LME COPPER JPY/KG</span>
-            <span className="text-lg font-mono text-red-600 font-black">¥{Number(db.config.market_price).toLocaleString()}</span>
-          </div>
-        )}
+        <div className="text-right">
+          <span className="text-[10px] text-gray-400 block font-bold">LME COPPER JPY/KG</span>
+          <span className="text-lg font-mono text-red-600 font-black">¥{Number(db.config.market_price).toLocaleString()}</span>
+        </div>
       </header>
 
       {role === 'GUEST' && (
-        <main className="max-w-md mx-auto py-24 px-6">
+        <main className="max-w-md mx-auto py-24 px-6 text-center">
           <div className="bg-white border-4 border-black p-10 rounded-2xl shadow-2xl">
-            <h2 className="text-3xl font-black text-center mb-8 italic">AUTHENTICATION</h2>
-            <form onSubmit={login} className="space-y-6">
-              <input name="loginId" className="w-full p-4 bg-gray-100 rounded border-none font-bold" placeholder="ID" required />
-              <input name="password" type="password" className="w-full p-4 bg-gray-100 rounded border-none font-bold" placeholder="PASS" required />
-              <button disabled={loading} className="w-full bg-red-600 text-white py-5 rounded font-black text-lg shadow-lg">
-                {loading ? 'CONNECTING...' : 'ENTER SYSTEM'}
+            <h2 className="text-3xl font-black mb-8 italic">LOGIN</h2>
+            <form onSubmit={login} className="space-y-6 text-left">
+              <input name="loginId" className="w-full p-4 bg-gray-100 rounded border-none font-bold" placeholder="ID (admin 等)" required />
+              <input name="password" type="password" className="w-full p-4 bg-gray-100 rounded border-none font-bold" placeholder="PASS (user 等)" required />
+              <button disabled={loading} className="w-full bg-red-600 text-white py-5 rounded font-black text-lg">
+                {loading ? '認証中...' : 'システムにアクセス'}
               </button>
             </form>
-            
-            {/* デバッグ用表示：本番では消します */}
-            {debugMsg && (
-              <div className="mt-6 p-4 bg-red-50 text-red-600 text-xs font-mono rounded border border-red-200">
-                [SYSTEM LOG]: {debugMsg}
-              </div>
-            )}
           </div>
+          <p className="mt-8 text-xs text-gray-400 font-bold uppercase tracking-widest">Tomakomai DX Project 2026</p>
         </main>
       )}
 
-      {/* ADMIN/MEMBER画面は以前のロジックを継承 */}
+      {/* ログイン後のADMIN/MEMBER表示（省略、認証成功時に表示） */}
       {role !== 'GUEST' && (
-        <div className="p-10 text-center">
-          <h2 className="text-2xl font-black">Welcome, {user.companyName}</h2>
-          <p className="mt-4">認証・建値取得の疎通が確認できました。</p>
-          <button onClick={() => setRole('GUEST')} className="mt-8 text-sm underline text-gray-400">Logout</button>
+        <div className="p-20 text-center">
+          <h2 className="text-3xl font-black">LOGIN SUCCESS: {user.companyName}</h2>
+          <p className="mt-4 text-slate-500">ロール: {role} / ランク: {user.rank}</p>
+          <button onClick={() => setRole('GUEST')} className="mt-10 underline text-sm">Logout</button>
         </div>
       )}
     </div>
