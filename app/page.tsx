@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 // --- 設定 ---
-const GAS_API_URL = "https://script.google.com/macros/s/YOUR_GAS_ID/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyfYM8q6t7Q7UwIRORFBNOCA-mMpVFE1Z3oLzCJp5GNiYI9_CMy4767p9am2iMY70kl/exec";
 const PRIMARY_RED = "#D32F2F";
 
 export default function WireProjectApp() {
